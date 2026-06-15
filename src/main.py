@@ -26,6 +26,18 @@ exercise = DexterityExercise()
 
 stats = Statistics()
 
+import time
+
+test_started = False
+
+paused = False
+
+MAX_TIME = 60
+
+pause_start = 0
+
+total_pause_time = 0
+
 # ==========================
 # MAIN LOOP
 # ==========================
@@ -49,9 +61,11 @@ while True:
 
     if len(hands) > 0:
 
-        hand = hands[0]
+    hand = hands[0]
 
-        finger_count = count_fingers(hand)
+    finger_count = count_fingers(hand)
+
+    if test_started and not paused:
 
         exercise.update(finger_count)
 
@@ -59,7 +73,46 @@ while True:
     # STATISTICS
     # ==========================
 
-    elapsed = stats.elapsed_time()
+    if test_started:
+
+    elapsed = (
+        time.time()
+        - stats.start_time
+        - total_pause_time
+    )
+
+else:
+
+    elapsed = 0
+
+    remaining_time = max(
+    0,
+    MAX_TIME - int(elapsed)
+)
+
+# Tự động kết thúc bài test khi hết giờ
+
+if remaining_time == 0 and test_started:
+
+    paused = True
+
+    test_started = False
+
+    if not test_started and elapsed == 0:
+
+    session_status = "READY"
+
+elif paused:
+
+    session_status = "PAUSED"
+
+elif remaining_time == 0:
+
+    session_status = "FINISHED"
+
+else:
+
+    session_status = "RUNNING"
 
     speed = stats.average_speed(
         exercise.repetitions
@@ -138,6 +191,16 @@ while True:
         (0, 0, 255),
         2
     )
+
+    cv2.putText(
+    img,
+    f"Session : {session_status}",
+    (35, 260),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.8,
+    (255, 0, 0),
+    2
+)
 
     cv2.putText(
         img,
