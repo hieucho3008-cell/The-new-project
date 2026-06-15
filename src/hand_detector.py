@@ -9,7 +9,7 @@ class HandDetector:
 
         self.hands = self.mpHands.Hands(
             static_image_mode=False,
-            max_num_hands=4,
+            max_num_hands=2,
             min_detection_confidence=0.7,
             min_tracking_confidence=0.7
         )
@@ -18,17 +18,27 @@ class HandDetector:
 
     def find_hands(self, img):
 
-        imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        imgRGB = cv2.cvtColor(
+            img,
+            cv2.COLOR_BGR2RGB
+        )
 
         results = self.hands.process(imgRGB)
 
         allHands = []
 
-        if results.multi_hand_landmarks:
+        if (
+            results.multi_hand_landmarks
+            and
+            results.multi_handedness
+        ):
 
             h, w, c = img.shape
 
-            for handLms in results.multi_hand_landmarks:
+            for handType, handLms in zip(
+                results.multi_handedness,
+                results.multi_hand_landmarks
+            ):
 
                 lmList = []
 
@@ -40,7 +50,9 @@ class HandDetector:
                     cx = int(lm.x * w)
                     cy = int(lm.y * h)
 
-                    lmList.append((cx, cy))
+                    lmList.append(
+                        (cx, cy)
+                    )
 
                     xList.append(cx)
                     yList.append(cy)
@@ -48,17 +60,45 @@ class HandDetector:
                 centerX = sum(xList) // len(xList)
                 centerY = sum(yList) // len(yList)
 
+                handLabel = (
+                    handType
+                    .classification[0]
+                    .label
+                )
+
                 handInfo = {
+
                     "lmList": lmList,
-                    "center": (centerX, centerY)
+
+                    "center": (
+                        centerX,
+                        centerY
+                    ),
+
+                    "type": handLabel
                 }
 
-                allHands.append(handInfo)
+                allHands.append(
+                    handInfo
+                )
 
                 self.mpDraw.draw_landmarks(
                     img,
                     handLms,
                     self.mpHands.HAND_CONNECTIONS
+                )
+
+                cv2.putText(
+                    img,
+                    handLabel,
+                    (
+                        centerX - 40,
+                        centerY - 20
+                    ),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.8,
+                    (0, 255, 0),
+                    2
                 )
 
         return allHands, img
