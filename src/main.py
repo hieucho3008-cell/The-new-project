@@ -242,27 +242,27 @@ else:
     img
 )
 
-key = cv2.waitKey(1)
+    key = cv2.waitKey(1)
 
-if key == ord('b'):
+    if key == ord('b'):
 
-    test_started = True
+        test_started = True
 
-elif key == ord('p'):
+    elif key == ord('p'):
 
-    paused = not paused
+        paused = not paused
 
-elif key == ord('r'):
+    elif key == ord('r'):
 
-    exercise.repetitions = 0
+        exercise.repetitions = 0
 
-elif key == 27:
+    elif key == 27:
 
-    break
+        break
 
 # ==========================
 # EXIT
 # ==========================
 
-cap.release()
-cv2.destroyAllWindows()
+    cap.release()
+    cv2.destroyAllWindows()
