@@ -75,10 +75,10 @@ while True:
 
     if test_started:
 
-    elapsed = (
-        time.time()
-        - stats.start_time
-        - total_pause_time
+        elapsed = (
+            time.time()
+            - stats.start_time
+            - total_pause_time
     )
 
 else:
