@@ -39,6 +39,8 @@ elapsed_before_pause = 0
 
 last_result = "No previous session"
 
+session_history = []
+
 # ==========================
 # MAIN LOOP
 # ==========================
@@ -123,11 +125,38 @@ while True:
         test_started = False
         finished = True
 
-        last_result = (
-            f"Last Session: "
-            f"{exercise.repetitions} reps | "
-            f"{speed:.2f} sec/cycle"
-        )
+        session_history.append({
+          "reps": exercise.repetitions,
+          "speed": speed
+        })
+
+    last_result = (
+        f"Last Session: "
+        f"{exercise.repetitions} reps | "
+        f"{speed:.2f} sec/cycle"
+    )
+    if len(session_history) > 0:
+
+    avg_reps = sum(
+        s["reps"]
+        for s in session_history
+    ) / len(session_history)
+
+    avg_speed = sum(
+        s["speed"]
+        for s in session_history
+    ) / len(session_history)
+
+    best_reps = max(
+        s["reps"]
+        for s in session_history
+    )
+
+else:
+
+    avg_reps = 0
+    avg_speed = 0
+    best_reps = 0
 
     # ==========================
     # SESSION STATUS
@@ -270,6 +299,45 @@ while True:
         0.6,
         (120, 0, 255),
         2
+    )
+    cv2.putText(
+    img,
+    f"Sessions : {len(session_history)}",
+    (35,540),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.6,
+    (0,0,0),
+    2
+    )
+
+    cv2.putText(
+    img,
+    f"Avg Reps : {avg_reps:.1f}",
+    (35,570),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.6,
+    (0,150,0),
+    2
+    )
+
+    cv2.putText(
+    img,
+    f"Avg Speed : {avg_speed:.2f}",
+    (35,600),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.6,
+    (150,0,150),
+    2
+    )
+
+    cv2.putText(
+    img,
+    f"Best Reps : {best_reps}",
+    (35,630),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.6,
+    (255,0,0),
+    2
     )
 
     # ==========================
