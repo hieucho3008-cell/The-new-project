@@ -33,15 +33,14 @@ class HandDetector:
             results.multi_handedness
         ):
 
-            h, w, c = img.shape
+            h, w, _ = img.shape
 
-            for handType, handLms in zip(
+            for handedness, handLms in zip(
                 results.multi_handedness,
                 results.multi_hand_landmarks
             ):
 
                 lmList = []
-
                 xList = []
                 yList = []
 
@@ -50,9 +49,7 @@ class HandDetector:
                     cx = int(lm.x * w)
                     cy = int(lm.y * h)
 
-                    lmList.append(
-                        (cx, cy)
-                    )
+                    lmList.append((cx, cy))
 
                     xList.append(cx)
                     yList.append(cy)
@@ -61,26 +58,24 @@ class HandDetector:
                 centerY = sum(yList) // len(yList)
 
                 handLabel = (
-                    handType
+                    handedness
                     .classification[0]
                     .label
                 )
 
+                # Đảo lại vì camera đã flip
+                if handLabel == "Left":
+                    handLabel = "Right"
+                else:
+                    handLabel = "Left"
+
                 handInfo = {
-
                     "lmList": lmList,
-
-                    "center": (
-                        centerX,
-                        centerY
-                    ),
-
+                    "center": (centerX, centerY),
                     "type": handLabel
                 }
 
-                allHands.append(
-                    handInfo
-                )
+                allHands.append(handInfo)
 
                 self.mpDraw.draw_landmarks(
                     img,
@@ -91,13 +86,10 @@ class HandDetector:
                 cv2.putText(
                     img,
                     handLabel,
-                    (
-                        centerX - 40,
-                        centerY - 20
-                    ),
+                    (centerX - 40, centerY - 20),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.8,
-                    (0, 255, 0),
+                    (0,255,0),
                     2
                 )
 
