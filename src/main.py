@@ -100,7 +100,7 @@ if remaining_time == 0 and test_started:
 
     if not test_started and elapsed == 0:
 
-    session_status = "READY"
+        session_status = "READY"
 
 elif paused:
 
