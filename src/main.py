@@ -147,6 +147,7 @@ while True:
     # UI PANEL
     # ==========================
     # Vẽ một hình nền mờ hoặc góc bảng trắng để chữ hiển thị rõ ràng hơn (tùy chọn)
+    cv2.rectangle(img, (20, 20), (500, 660), (255, 255, 255), -1)
 
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
@@ -190,4 +191,32 @@ while True:
         finished = False
         stats.start_time = time.time()
         total_pause_time = 0
-        exercise.repetitions = 0  # Reset
+        exercise.repetitions = 0  # Reset lượt đếm của bài cũ khi bấm Start bài mới
+
+    elif key == ord('p'):
+        if test_started:
+            if not paused:
+                paused = True
+                pause_start = time.time()
+                elapsed_before_pause = elapsed
+            else:
+                paused = False
+                total_pause_time += (time.time() - pause_start)
+
+    elif key == ord('r'):
+        exercise.repetitions = 0
+        test_started = False
+        paused = False
+        finished = False
+        total_pause_time = 0
+        last_result = "No previous session"
+        session_history.clear()  # Xóa sạch lịch sử các phiên chơi cũ nếu nhấn Reset
+
+    elif key == 27:  # Phím ESC
+        break
+
+# ==========================
+# EXIT
+# ==========================
+cap.release()
+cv2.destroyAllWindows()
