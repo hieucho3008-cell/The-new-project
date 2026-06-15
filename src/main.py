@@ -238,19 +238,31 @@ else:
     )
 
     cv2.imshow(
-        "Hand Dexterity Assessment",
-        img
-    )
+    "Hand Dexterity Assessment",
+    img
+)
 
-    key = cv2.waitKey(1)
+key = cv2.waitKey(1)
 
-    if key == 27:
-        break
+if key == ord('b'):
+
+    test_started = True
+
+elif key == ord('p'):
+
+    paused = not paused
+
+elif key == ord('r'):
+
+    exercise.repetitions = 0
+
+elif key == 27:
+
+    break
 
 # ==========================
 # EXIT
 # ==========================
 
 cap.release()
-
 cv2.destroyAllWindows()
