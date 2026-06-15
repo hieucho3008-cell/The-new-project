@@ -172,14 +172,6 @@ while True:
     # UI PANEL
     # ==========================
 
-    cv2.rectangle(
-        img,
-        (20, 20),
-        (620, 560),
-        (255, 255, 255),
-        -1
-    )
-
     cv2.putText(
         img,
         "HAND DEXTERITY ASSESSMENT",
