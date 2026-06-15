@@ -147,7 +147,6 @@ while True:
     # UI PANEL
     # ==========================
     # Vẽ một hình nền mờ hoặc góc bảng trắng để chữ hiển thị rõ ràng hơn (tùy chọn)
-    cv2.rectangle(img, (20, 20), (500, 660), (255, 255, 255), -1)
 
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
