@@ -137,10 +137,10 @@ while True:
     )
     if len(session_history) > 0:
 
-    avg_reps = sum(
-        s["reps"]
-        for s in session_history
-    ) / len(session_history)
+        avg_reps = sum(
+            s["reps"]
+            for s in session_history
+        ) / len(session_history)
 
     avg_speed = sum(
         s["speed"]
