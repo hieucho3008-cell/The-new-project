@@ -61,7 +61,7 @@ while True:
 
     if len(hands) > 0:
 
-    hand = hands[0]
+        hand = hands[0]
 
     finger_count = count_fingers(hand)
 
