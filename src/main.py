@@ -1,11 +1,30 @@
 import cv2
 import time
+import os
+import sys
+
+# Thêm thư mục src vào hệ thống nếu chạy từ ngoài thư mục gốc
+sys.path.append(os.path.join(os.path.dirname(__file__)))
 
 from hand_detector import HandDetector
 from finger_counter import count_fingers
 from exercise_logic import DexterityExercise
 from statistics import Statistics
-from amplitude import calculate_amplitude
+
+# Định nghĩa hàm tính amplitude trực tiếp tại đây để tránh lỗi thiếu file amplitude.py
+def calculate_amplitude(hand):
+    """
+    Hàm tính biên độ (khoảng cách từ cổ tay đến ngón giữa hoặc lòng bàn tay)
+    Thay đổi tùy thuộc vào cách bạn tracking, dưới đây là logic mẫu dựa trên lmList
+    """
+    if "lmList" in hand and len(hand["lmList"]) > 0:
+        # Lấy tọa độ landmark 0 (Wrist - Cổ tay) và landmark 12 (Middle Finger Tip)
+        p0 = hand["lmList"][0]
+        p12 = hand["lmList"][12]
+        # Tính khoảng cách Euclidean
+        distance = ((p12[0] - p0[0])**2 + (p12[1] - p0[1])**2) ** 0.5
+        return distance
+    return 0
 
 # ==========================
 # CAMERA
@@ -37,7 +56,6 @@ elapsed_before_pause = 0
 last_result = "No previous session"
 session_history = []
 
-# Khởi tạo các biến thống kê ban đầu để tránh lỗi khi chưa có session nào
 avg_reps = 0
 avg_speed = 0
 best_reps = 0
@@ -73,7 +91,7 @@ while True:
             fingers = count_fingers(hand)
             finger_count += fingers
 
-            # Tính amplitude của từng tay và cộng dồn
+            # Gọi hàm tính biên độ đã định nghĩa ở trên
             amplitude = calculate_amplitude(hand)
             current_amplitude += amplitude
 
@@ -82,7 +100,7 @@ while True:
             elif hand["type"] == "Right":
                 right_count = fingers
 
-        # Lấy trung bình amplitude nếu có 2 tay (Bọc trong IF chống chia cho 0)
+        # Lấy trung bình amplitude nếu phát hiện 2 tay
         current_amplitude = current_amplitude / len(hands)
 
         if test_started and not paused:
@@ -95,9 +113,8 @@ while True:
     if test_started and not paused:
         elapsed = time.time() - stats.start_time - total_pause_time
         
-        # Chỉ ghi nhận biên độ chia nửa thời gian KHI TEST ĐANG CHẠY thực sự
         if elapsed <= 30:
-            if len(hands) > 0:  # Chỉ append khi thực sự có tay trong camera
+            if len(hands) > 0:
                 first_half_amplitude.append(current_amplitude)
         else:
             if len(hands) > 0:
@@ -129,7 +146,7 @@ while True:
         first_avg = sum(first_half_amplitude) / len(first_half_amplitude)
         second_avg = sum(second_half_amplitude) / len(second_half_amplitude)
         
-        if first_avg > 0:  # Chống chia cho 0 nếu biên độ nửa đầu bằng 0
+        if first_avg > 0:
             amplitude_decrement = ((first_avg - second_avg) / first_avg) * 100
         else:
             amplitude_decrement = 0
@@ -144,7 +161,6 @@ while True:
         test_started = False
         finished = True
 
-        # Chỉ lưu vào lịch sử duy nhất một lần khi vừa kết thúc bài test
         session_history.append({
             "reps": exercise.repetitions,
             "speed": speed
@@ -152,7 +168,6 @@ while True:
         
         last_result = f"Last Session: {exercise.repetitions} reps | {speed:.2f} sec/cycle"
 
-    # Tính toán thống kê dựa trên lịch sử
     if len(session_history) > 0:
         avg_reps = sum(s["reps"] for s in session_history) / len(session_history)
         avg_speed = sum(s["speed"] for s in session_history) / len(session_history)
@@ -190,7 +205,6 @@ while True:
     # ==========================
     # UI PANEL
     # ==========================
-    # Vẽ hình nền trắng góc trái làm bệ đỡ cho chữ hiển thị rõ ràng hơn
     cv2.rectangle(img, (20, 20), (520, 690), (255, 255, 255), -1)
 
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
@@ -209,7 +223,6 @@ while True:
     cv2.putText(img, f"Avg Speed : {avg_speed:.2f}", (35, 600), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (150, 0, 150), 2)
     cv2.putText(img, f"Best Reps : {best_reps}", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
     
-    # Đẩy tọa độ hiển thị Amplitude xuống dưới cùng, không lo bị đè chữ
     cv2.putText(img, f"Amplitude : {avg_amplitude:.1f}", (35, 660), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
     cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 685), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
@@ -271,11 +284,8 @@ while True:
         last_result = "No previous session"
         session_history.clear()
 
-    elif key == 27:  # Phím ESC
+    elif key == 27:  # Phím ESC kết thúc chương trình an toàn
         break
 
-# ==========================
-# EXIT
-# ==========================
 cap.release()
 cv2.destroyAllWindows()
