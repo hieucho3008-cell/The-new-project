@@ -194,45 +194,50 @@ while True:
     # ==========================
     if finger_count >= 4:
         status = "OPEN"
-        color = (0, 255, 0)
+        color = (0, 200, 0)
     elif finger_count <= 1:
         status = "CLOSED"
-        color = (0, 0, 255)
+        color = (0, 0, 220)
     else:
         status = "MOVING"
-        color = (0, 255, 255)
+        color = (0, 180, 220)
 
     # ==========================
-    # UI PANEL
+    # UI PANEL (CĂN CHỈNH ĐỀU CỠ CHỮ & KHOẢNG CÁCH)
     # ==========================
-    cv2.rectangle(img, (20, 20), (520, 690), (255, 255, 255), -1)
+    # Khung trắng bên trái nền UI
+    cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
 
+    # Tiêu đề bảng
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
-    cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-    cv2.putText(img, f"Right Hand : {right_count}", (35, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
-    cv2.putText(img, f"Total Fingers : {finger_count}", (35, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-    cv2.putText(img, f"Status : {status}", (35, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 3)
-    cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-    cv2.putText(img, f"Session : {session_status}", (35, 360), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-    cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 255), 2)
-    cv2.putText(img, f"Avg Speed : {speed:.2f} sec/cycle", (35, 460), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 120, 255), 2)
     
-    cv2.putText(img, last_result, (35, 510), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (120, 0, 255), 2)
-    cv2.putText(img, f"Sessions : {len(session_history)}", (35, 540), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
-    cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 150, 0), 2)
-    cv2.putText(img, f"Avg Speed : {avg_speed:.2f}", (35, 600), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (150, 0, 150), 2)
-    cv2.putText(img, f"Best Reps : {best_reps}", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+    # --- Nhóm 1: Live Status (Y từ 110 -> 350, khoảng cách 40px) ---
+    cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
+    cv2.putText(img, f"Right Hand : {right_count}", (35, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
+    cv2.putText(img, f"Total Fingers : {finger_count}", (35, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
+    cv2.putText(img, f"Status : {status}", (35, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
+    cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
+    cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
+    cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 255), 2)
     
-    cv2.putText(img, f"Amplitude : {avg_amplitude:.1f}", (35, 660), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
-    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 685), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    # --- Nhóm 2: Lịch sử & Thống kê (Y từ 410 -> 570, khoảng cách 40px) ---
+    cv2.putText(img, last_result, (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (120, 0, 255), 2)
+    cv2.putText(img, f"Total Sessions : {len(session_history)}", (35, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 150, 0), 2)
+    cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 530), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (150, 0, 150), 2)
+    cv2.putText(img, f"Best Reps : {best_reps}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
+    
+    # --- Nhóm 3: Biên độ sóng - Amplitude (Y từ 630 -> 670, khoảng cách 40px) ---
+    cv2.putText(img, f"Amplitude : {avg_amplitude:.1f}", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 100, 0), 2)
+    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 670), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
 
     # ==========================
-    # CONTROLS
+    # CONTROLS (PHÍA BÊN PHẢI)
     # ==========================
-    cv2.putText(img, "B = Start", (850, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-    cv2.putText(img, "P = Pause / Resume", (850, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2)
-    cv2.putText(img, "R = Reset", (850, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
-    cv2.putText(img, "ESC = Exit", (850, 250), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+    cv2.putText(img, "B = Start", (950, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 0), 2)
+    cv2.putText(img, "P = Pause / Resume", (950, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 220), 2)
+    cv2.putText(img, "R = Reset", (950, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
+    cv2.putText(img, "ESC = Exit", (950, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 200), 2)
 
     # ==========================
     # WINDOW
