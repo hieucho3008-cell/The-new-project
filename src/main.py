@@ -67,6 +67,12 @@ second_half_amplitude = []
 avg_amplitude = 0
 amplitude_decrement = 0
 
+# Các biến tạm dùng để đóng băng kết quả hiển thị lên bảng cuối phiên
+final_reps = 0
+final_speed = 0
+final_amplitude = 0
+final_decrement = 0
+
 # ==========================
 # MAIN LOOP
 # ==========================
@@ -161,12 +167,18 @@ while True:
         test_started = False
         finished = True
 
+        # Khóa dữ liệu của session này lại để điền vào bảng kết quả báo cáo
+        final_reps = exercise.repetitions
+        final_speed = speed
+        final_amplitude = avg_amplitude
+        final_decrement = amplitude_decrement
+
         session_history.append({
-            "reps": exercise.repetitions,
-            "speed": speed
+            "reps": final_reps,
+            "speed": final_speed
         })
         
-        last_result = f"Last Session: {exercise.repetitions} reps | {speed:.2f} sec/cycle"
+        last_result = f"Last Session: {final_reps} reps | {final_speed:.2f} sec/cycle"
 
     if len(session_history) > 0:
         avg_reps = sum(s["reps"] for s in session_history) / len(session_history)
@@ -203,13 +215,15 @@ while True:
         color = (0, 180, 220)
 
     # ==========================
-    # UI PANEL (CĂN CHỈNH ĐỀU CỠ CHỮ & KHOẢNG CÁCH)
+    # UI PANEL (MÀN HÌNH CHÍNH)
     # ==========================
+    # Khung trắng bên trái nền UI
+    cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
 
     # Tiêu đề bảng
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     
-    # --- Nhóm 1: Live Status (Y từ 110 -> 350, khoảng cách 40px) ---
+    # --- Nhóm 1: Live Status ---
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
     cv2.putText(img, f"Right Hand : {right_count}", (35, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
     cv2.putText(img, f"Total Fingers : {finger_count}", (35, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
@@ -218,38 +232,80 @@ while True:
     cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
     cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 255), 2)
     
-    # --- Nhóm 2: Lịch sử & Thống kê (Y từ 410 -> 570, khoảng cách 40px) ---
+    # --- Nhóm 2: Lịch sử & Thống kê ---
     cv2.putText(img, last_result, (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (120, 0, 255), 2)
     cv2.putText(img, f"Total Sessions : {len(session_history)}", (35, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
     cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 150, 0), 2)
     cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 530), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (150, 0, 150), 2)
     cv2.putText(img, f"Best Reps : {best_reps}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
     
-    # --- Nhóm 3: Biên độ sóng - Amplitude (Y từ 630 -> 670, khoảng cách 40px) ---
+    # --- Nhóm 3: Biên độ sóng ---
     cv2.putText(img, f"Amplitude : {avg_amplitude:.1f}", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 100, 0), 2)
     cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 670), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
 
-    # ==========================
-    # CONTROLS (PHÍA BÊN PHẢI)
-    # ==========================
+    # Nút điều khiển phía bên phải
     cv2.putText(img, "B = Start", (950, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 0), 2)
     cv2.putText(img, "P = Pause / Resume", (950, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 220), 2)
-    cv2.putText(img, "R = Reset", (950, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
+    cv2.putText(img, "R = Reset All", (950, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
     cv2.putText(img, "ESC = Exit", (950, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 200), 2)
 
     # ==========================
-    # WINDOW
+    # BẢNG KẾT QUẢ PHÂN TÍCH (POPUPS KHI FINISHED)
+    # ==========================
+    if finished:
+        # Làm mờ nhẹ màn hình nền camera sau bằng một lớp phủ màu xám trong suốt
+        overlay = img.copy()
+        cv2.rectangle(overlay, (0, 0), (1280, 720), (40, 40, 40), -1)
+        cv2.addWeighted(overlay, 0.7, img, 0.3, 0, img)
+
+        # Vẽ bảng kết quả trung tâm (Y: 120 -> 600, X: 340 -> 940)
+        bx1, by1, bx2, by2 = 340, 120, 940, 600
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (255, 255, 255), -1) # Nền bảng trắng
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (0, 102, 204), 4)    # Viền xanh dương đậm
+
+        # Tiêu đề bảng báo cáo
+        cv2.putText(img, "SESSION PERFORMANCE REPORT", (bx1 + 75, by1 + 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 102, 204), 3)
+        cv2.line(img, (bx1 + 40, by1 + 75), (bx2 - 40, by1 + 75), (200, 200, 200), 2)
+
+        # Hiển thị các thông số phân tích cụ thể thu được trong đợt thử nghiệm
+        cv2.putText(img, f"- Total Repetitions :  {final_reps} cycles", (bx1 + 60, by1 + 140), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+        cv2.putText(img, f"- Average Speed     :  {final_speed:.2f} sec/cycle", (bx1 + 60, by1 + 200), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+        cv2.putText(img, f"- Mean Amplitude    :  {final_amplitude:.1f} px", (bx1 + 60, by1 + 260), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+        
+        # Đánh giá chỉ số mệt mỏi biên độ (Fatigue Index)
+        cv2.putText(img, f"- Amplitude Decay   :  {final_decrement:.1f}%", (bx1 + 60, by1 + 320), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255) if final_decrement > 15 else (0, 150, 0), 2)
+        
+        # Đưa ra chẩn đoán nhanh tự động
+        if final_decrement > 20:
+            diagnostic = "Status: Significant Fatigue / Slowdown Detected"
+            diag_color = (0, 0, 200)
+        elif final_reps < 15:
+            diagnostic = "Status: Low Speed Activity / Rigidity Check"
+            diag_color = (0, 120, 200)
+        else:
+            diagnostic = "Status: Stable & Fluid Movement Profile"
+            diag_color = (0, 150, 0)
+            
+        cv2.putText(img, diagnostic, (bx1 + 60, by1 + 390), cv2.FONT_HERSHEY_SIMPLEX, 0.65, diag_color, 2)
+
+        # Thanh hướng dẫn điều khiển bên dưới cùng của bảng popup
+        cv2.line(img, (bx1 + 40, by1 + 430), (bx2 - 40, by1 + 430), (200, 200, 200), 2)
+        cv2.putText(img, "Press 'C' to Continue  |  Press 'R' to Reset All", (bx1 + 70, by1 + 465), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (100, 100, 100), 2)
+
+    # ==========================
+    # WINDOW DISPLAY
     # ==========================
     cv2.namedWindow("Hand Dexterity Assessment", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("Hand Dexterity Assessment", 1280, 720)
     cv2.imshow("Hand Dexterity Assessment", img)
 
     # ==========================
-    # KEYBOARD
+    # KEYBOARD CONTROLS
     # ==========================
     key = cv2.waitKey(1)
 
-    if key == ord('b') and not test_started:
+    # Phím tắt bắt đầu bài test mới
+    if key == ord('b') and not test_started and not finished:
         test_started = True
         paused = False
         finished = False
@@ -263,6 +319,7 @@ while True:
         second_half_amplitude.clear()
         exercise.repetitions = 0
 
+    # Phím tắt Tạm dừng cuộc thử nghiệm
     elif key == ord('p'):
         if test_started:
             if not paused:
@@ -273,6 +330,20 @@ while True:
                 paused = False
                 total_pause_time += (time.time() - pause_start)
 
+    # Phím tắt 'C' - Đóng bảng kết quả báo cáo để tiếp tục thử nghiệm phiên mới
+    elif key == ord('c') and finished:
+        finished = False
+        test_started = False
+        paused = False
+        total_pause_time = 0
+        avg_amplitude = 0
+        amplitude_decrement = 0
+        amplitude_history.clear()
+        first_half_amplitude.clear()
+        second_half_amplitude.clear()
+        exercise.repetitions = 0
+
+    # Phím tắt Reset dữ liệu toàn bộ hệ thống
     elif key == ord('r'):
         exercise.repetitions = 0
         test_started = False
@@ -287,7 +358,8 @@ while True:
         last_result = "No previous session"
         session_history.clear()
 
-    elif key == 27:  # Phím ESC kết thúc chương trình an toàn
+    # Thoát chương trình
+    elif key == 27:  # ESC
         break
 
 cap.release()
