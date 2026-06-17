@@ -42,6 +42,13 @@ avg_reps = 0
 avg_speed = 0
 best_reps = 0
 
+amplitude_history = []
+
+current_amplitude = 0
+
+first_half_amplitude = []
+second_half_amplitude = []
+
 # ==========================
 # MAIN LOOP
 # ==========================
@@ -60,18 +67,53 @@ while True:
     left_count = 0
     right_count = 0
 
-    if len(hands) > 0:
-        for hand in hands:
-            fingers = count_fingers(hand)
-            finger_count += fingers
+if len(hands) > 0:
 
-            if hand["type"] == "Left":
-                left_count = fingers
-            elif hand["type"] == "Right":
-                right_count = fingers
+    current_amplitude = 0
 
-        if test_started and not paused:
-            exercise.update(finger_count)
+    for hand in hands:
+
+        fingers = count_fingers(hand)
+
+        finger_count += fingers
+
+        # Tính amplitude của từng tay
+        amplitude = calculate_amplitude(hand)
+
+        current_amplitude += amplitude
+
+        if hand["type"] == "Left":
+
+            left_count = fingers
+
+        elif hand["type"] == "Right":
+
+            right_count = fingers
+
+    # Lấy trung bình amplitude nếu có 2 tay
+    current_amplitude = (
+        current_amplitude / len(hands)
+    )
+
+    if test_started and not paused:
+
+        exercise.update(finger_count)
+
+        amplitude_history.append(
+            current_amplitude
+        )
+
+        if elapsed <= 30:
+
+            first_half_amplitude.append(
+                current_amplitude
+            )
+
+        else:
+
+            second_half_amplitude.append(
+                current_amplitude
+            )
 
     # ==========================
     # TIMER
