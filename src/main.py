@@ -5,6 +5,7 @@ from hand_detector import HandDetector
 from finger_counter import count_fingers
 from exercise_logic import DexterityExercise
 from statistics import Statistics
+from amplitude import calculate_amplitude
 
 # ==========================
 # CAMERA
