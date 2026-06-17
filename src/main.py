@@ -43,11 +43,11 @@ avg_speed = 0
 best_reps = 0
 
 amplitude_history = []
-
 current_amplitude = 0
-
 first_half_amplitude = []
 second_half_amplitude = []
+avg_amplitude = 0
+amplitude_decrement = 0
 
 # ==========================
 # MAIN LOOP
@@ -66,76 +66,48 @@ while True:
     finger_count = 0
     left_count = 0
     right_count = 0
+    current_amplitude = 0
 
     if len(hands) > 0:
-
-        current_amplitude = 0
-
         for hand in hands:
+            fingers = count_fingers(hand)
+            finger_count += fingers
 
-        fingers = count_fingers(hand)
+            # Tính amplitude của từng tay và cộng dồn
+            amplitude = calculate_amplitude(hand)
+            current_amplitude += amplitude
 
-        finger_count += fingers
+            if hand["type"] == "Left":
+                left_count = fingers
+            elif hand["type"] == "Right":
+                right_count = fingers
 
-        amplitude = calculate_amplitude(hand)
+        # Lấy trung bình amplitude nếu có 2 tay (Bọc trong IF chống chia cho 0)
+        current_amplitude = current_amplitude / len(hands)
 
-        current_amplitude += amplitude
+        if test_started and not paused:
+            exercise.update(finger_count)
+            amplitude_history.append(current_amplitude)
 
-        if hand["type"] == "Left":
-            left_count = fingers
-
-        elif hand["type"] == "Right":
-            right_count = fingers
-        # Tính amplitude của từng tay
-        amplitude = calculate_amplitude(hand)
-
-        current_amplitude += amplitude
-
-        if hand["type"] == "Left":
-
-            left_count = fingers
-
-        elif hand["type"] == "Right":
-
-            right_count = fingers
-
-    # Lấy trung bình amplitude nếu có 2 tay
-    current_amplitude = (
-        current_amplitude / len(hands)
-    )
-
-    if test_started and not paused:
-
-        exercise.update(finger_count)
-
-        amplitude_history.append(
-            current_amplitude
-        )
     # ==========================
     # TIMER
     # ==========================
     if test_started and not paused:
         elapsed = time.time() - stats.start_time - total_pause_time
+        
+        # Chỉ ghi nhận biên độ chia nửa thời gian KHI TEST ĐANG CHẠY thực sự
+        if elapsed <= 30:
+            if len(hands) > 0:  # Chỉ append khi thực sự có tay trong camera
+                first_half_amplitude.append(current_amplitude)
+        else:
+            if len(hands) > 0:
+                second_half_amplitude.append(current_amplitude)
     elif paused:
         elapsed = elapsed_before_pause
     else:
         elapsed = 0
 
     remaining_time = max(0, MAX_TIME - int(elapsed))
-
-
-    if elapsed <= 30:
-
-        first_half_amplitude.append(
-            current_amplitude
-        )
-
-    else:
-
-        second_half_amplitude.append(
-            current_amplitude
-        )
-
 
     # ==========================
     # SPEED
@@ -149,44 +121,19 @@ while True:
     # AMPLITUDE STATISTICS
     # ==========================
     if len(amplitude_history) > 0:
-
-        avg_amplitude = (
-            sum(amplitude_history)
-            /
-            len(amplitude_history)
-        )
-
+        avg_amplitude = sum(amplitude_history) / len(amplitude_history)
     else:
-
         avg_amplitude = 0
 
-
-    if (
-        len(first_half_amplitude) > 0
-        and
-        len(second_half_amplitude) > 0
-    ):
-
-        first_avg = (
-            sum(first_half_amplitude)
-            /
-            len(first_half_amplitude)
-        )
-
-        second_avg = (
-            sum(second_half_amplitude)
-            /
-            len(second_half_amplitude)
-        )
-
-        amplitude_decrement = (
-            (first_avg - second_avg)
-            /
-            first_avg
-        ) * 100
-
+    if len(first_half_amplitude) > 0 and len(second_half_amplitude) > 0:
+        first_avg = sum(first_half_amplitude) / len(first_half_amplitude)
+        second_avg = sum(second_half_amplitude) / len(second_half_amplitude)
+        
+        if first_avg > 0:  # Chống chia cho 0 nếu biên độ nửa đầu bằng 0
+            amplitude_decrement = ((first_avg - second_avg) / first_avg) * 100
+        else:
+            amplitude_decrement = 0
     else:
-
         amplitude_decrement = 0
     
     # ==========================
@@ -205,7 +152,7 @@ while True:
         
         last_result = f"Last Session: {exercise.repetitions} reps | {speed:.2f} sec/cycle"
 
-    # Tính toán thống kê dựa trên lịch sử (Nằm trong vòng lặp chính để cập nhật liên tục)
+    # Tính toán thống kê dựa trên lịch sử
     if len(session_history) > 0:
         avg_reps = sum(s["reps"] for s in session_history) / len(session_history)
         avg_speed = sum(s["speed"] for s in session_history) / len(session_history)
@@ -243,9 +190,8 @@ while True:
     # ==========================
     # UI PANEL
     # ==========================
-    # Vẽ một hình nền mờ hoặc góc bảng trắng để chữ hiển thị rõ ràng hơn (tùy chọn)
-    cv2.putText(img,f"Amplitude : {avg_amplitude:.1f}",(35,610),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,100,0),2)
-    cv2.putText(img,f"Amplitude Loss : {amplitude_decrement:.1f}%",(35,640),cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,0,255),2)
+    # Vẽ hình nền trắng góc trái làm bệ đỡ cho chữ hiển thị rõ ràng hơn
+    cv2.rectangle(img, (20, 20), (520, 690), (255, 255, 255), -1)
 
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
@@ -262,6 +208,10 @@ while True:
     cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 150, 0), 2)
     cv2.putText(img, f"Avg Speed : {avg_speed:.2f}", (35, 600), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (150, 0, 150), 2)
     cv2.putText(img, f"Best Reps : {best_reps}", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+    
+    # Đẩy tọa độ hiển thị Amplitude xuống dưới cùng, không lo bị đè chữ
+    cv2.putText(img, f"Amplitude : {avg_amplitude:.1f}", (35, 660), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
+    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 685), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
     # ==========================
     # CONTROLS
@@ -295,7 +245,7 @@ while True:
         amplitude_history.clear()
         first_half_amplitude.clear()
         second_half_amplitude.clear()
-        exercise.repetitions = 0  # Reset lượt đếm của bài cũ khi bấm Start bài mới
+        exercise.repetitions = 0
 
     elif key == ord('p'):
         if test_started:
@@ -313,11 +263,13 @@ while True:
         paused = False
         finished = False
         total_pause_time = 0
+        avg_amplitude = 0
+        amplitude_decrement = 0
         amplitude_history.clear()
         first_half_amplitude.clear()
         second_half_amplitude.clear()
         last_result = "No previous session"
-        session_history.clear()  # Xóa sạch lịch sử các phiên chơi cũ nếu nhấn Reset
+        session_history.clear()
 
     elif key == 27:  # Phím ESC
         break
