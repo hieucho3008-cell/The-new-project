@@ -217,8 +217,6 @@ while True:
     # ==========================
     # UI PANEL (MÀN HÌNH CHÍNH)
     # ==========================
-    # Khung trắng bên trái nền UI
-    cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
 
     # Tiêu đề bảng
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
