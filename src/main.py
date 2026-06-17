@@ -67,16 +67,25 @@ while True:
     left_count = 0
     right_count = 0
 
-if len(hands) > 0:
+    if len(hands) > 0:
 
-    current_amplitude = 0
+        current_amplitude = 0
 
-    for hand in hands:
+        for hand in hands:
 
         fingers = count_fingers(hand)
 
         finger_count += fingers
 
+        amplitude = calculate_amplitude(hand)
+
+        current_amplitude += amplitude
+
+        if hand["type"] == "Left":
+            left_count = fingers
+
+        elif hand["type"] == "Right":
+            right_count = fingers
         # Tính amplitude của từng tay
         amplitude = calculate_amplitude(hand)
 
@@ -102,19 +111,6 @@ if len(hands) > 0:
         amplitude_history.append(
             current_amplitude
         )
-
-        if elapsed <= 30:
-
-            first_half_amplitude.append(
-                current_amplitude
-            )
-
-        else:
-
-            second_half_amplitude.append(
-                current_amplitude
-            )
-
     # ==========================
     # TIMER
     # ==========================
@@ -127,6 +123,20 @@ if len(hands) > 0:
 
     remaining_time = max(0, MAX_TIME - int(elapsed))
 
+
+    if elapsed <= 30:
+
+        first_half_amplitude.append(
+            current_amplitude
+        )
+
+    else:
+
+        second_half_amplitude.append(
+            current_amplitude
+        )
+
+
     # ==========================
     # SPEED
     # ==========================
@@ -135,6 +145,50 @@ if len(hands) > 0:
     else:
         speed = 0
 
+    # ==========================
+    # AMPLITUDE STATISTICS
+    # ==========================
+    if len(amplitude_history) > 0:
+
+        avg_amplitude = (
+            sum(amplitude_history)
+            /
+            len(amplitude_history)
+        )
+
+    else:
+
+        avg_amplitude = 0
+
+
+    if (
+        len(first_half_amplitude) > 0
+        and
+        len(second_half_amplitude) > 0
+    ):
+
+        first_avg = (
+            sum(first_half_amplitude)
+            /
+            len(first_half_amplitude)
+        )
+
+        second_avg = (
+            sum(second_half_amplitude)
+            /
+            len(second_half_amplitude)
+        )
+
+        amplitude_decrement = (
+            (first_avg - second_avg)
+            /
+            first_avg
+        ) * 100
+
+    else:
+
+        amplitude_decrement = 0
+    
     # ==========================
     # AUTO FINISH
     # ==========================
@@ -190,6 +244,8 @@ if len(hands) > 0:
     # UI PANEL
     # ==========================
     # Vẽ một hình nền mờ hoặc góc bảng trắng để chữ hiển thị rõ ràng hơn (tùy chọn)
+    cv2.putText(img,f"Amplitude : {avg_amplitude:.1f}",(35,610),cv2.FONT_HERSHEY_SIMPLEX,0.6,(255,100,0),2)
+    cv2.putText(img,f"Amplitude Loss : {amplitude_decrement:.1f}%",(35,640),cv2.FONT_HERSHEY_SIMPLEX,0.6,(0,0,255),2)
 
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
@@ -233,6 +289,12 @@ if len(hands) > 0:
         finished = False
         stats.start_time = time.time()
         total_pause_time = 0
+        current_amplitude = 0
+        avg_amplitude = 0
+        amplitude_decrement = 0
+        amplitude_history.clear()
+        first_half_amplitude.clear()
+        second_half_amplitude.clear()
         exercise.repetitions = 0  # Reset lượt đếm của bài cũ khi bấm Start bài mới
 
     elif key == ord('p'):
@@ -251,6 +313,9 @@ if len(hands) > 0:
         paused = False
         finished = False
         total_pause_time = 0
+        amplitude_history.clear()
+        first_half_amplitude.clear()
+        second_half_amplitude.clear()
         last_result = "No previous session"
         session_history.clear()  # Xóa sạch lịch sử các phiên chơi cũ nếu nhấn Reset
 
