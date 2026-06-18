@@ -215,7 +215,6 @@ while True:
     # BACKGROUND UI PANEL
     # ==========================
     # Vẽ bảng thông số real-time bên trái màn hình
-    cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     
     # Nhóm 1: Trạng thái hiện tại (Live)
