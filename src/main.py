@@ -13,25 +13,25 @@ from exercise_logic import DexterityExercise
 from statistics import Statistics
 
 # ==========================================
-# [5] CONFIGURATION SETTINGS (BIẾN CẤU HÌNH)
-# Cập nhật chuẩn theo bảng đánh giá lâm sàng
+# CONFIGURATION SETTINGS (BIẾN CẤU HÌNH VÀ NGƯỠNG LÂM SÀNG)
 # ==========================================
 CONFIG = {
-    "MAX_TIME": 60,              # Thời gian chạy bài test (giây)
-    "FILTER_WINDOW": 5,          # Độ lớn cửa sổ lọc nhiễu Moving Average
-    "THRESH_NORM_REPS": 70,      # Bình thường (Good): > 70 reps
-    "THRESH_MOD_REPS": 40,       # Nguy cơ cao (High Risk): < 40 reps (Còn lại từ 40-70 là Cảnh báo)
-    "THRESH_NORM_SPEED": 0.8,    # Bình thường (Good): < 0.8 s/cycle
-    "THRESH_MOD_SPEED": 1.5,     # Nguy cơ cao (High Risk): > 1.5 s/cycle
-    "THRESH_NORM_DECAY": 10.0,   # Bình thường (Good): < 10%
-    "THRESH_MOD_DECAY": 25.0,    # Nguy cơ cao (High Risk): > 25%
+    "MAX_TIME": 60,              # Tổng thời gian chạy bài test (bao gồm cả thời gian Calibrate)
+    "CALIBRATION_TIME": 3,       # 3 giây đầu tiên để Hiệu chuẩn (Calibrate) Baseline bàn tay
+    "FILTER_WINDOW": 5,          # Cửa sổ lọc nhiễu Moving Average
+    "THRESH_NORM_REPS": 70,      # Bình thường: > 70 reps
+    "THRESH_MOD_REPS": 40,       # Nguy cơ cao: < 40 reps
+    "THRESH_NORM_SPEED": 0.8,    # Bình thường: < 0.8 s/cycle
+    "THRESH_MOD_SPEED": 1.5,     # Nguy cơ cao: > 1.5 s/cycle
+    "THRESH_NORM_DECAY": 10.0,   # Bình thường sụt giảm biên độ mỏi cơ: < 10%
+    "THRESH_MOD_DECAY": 25.0,    # Nguy cơ cao sụt giảm biên độ mỏi cơ: > 25%
 }
 
 # ==========================================
 # TỰ ĐỘNG XỬ LÝ XUỐNG DÒNG CHO VĂN BẢN DÀI
 # ==========================================
 def wrap_text(text, max_chars):
-    """Bọc văn bản thành danh sách các dòng với số ký tự tối đa quy định"""
+    """Bọc văn bản thành danh sách các dòng với số ký tự tối đa quy định để chống tràn chữ"""
     words = text.split()
     lines = []
     current_line = []
@@ -49,25 +49,19 @@ def wrap_text(text, max_chars):
     return lines
 
 # ==========================================
-# [1] NORMALIZED AMPLITUDE FUNCTION WITH FILTER
+# BIÊN ĐỘ CHUẨN HÓA DỰA TRÊN XƯƠNG BÀN TAY
 # ==========================================
 def calculate_normalized_amplitude(hand):
-    """
-    Tính biên độ chuẩn hóa để không phụ thuộc vào khoảng cách xa/gần camera
-    """
+    """Tính tỷ lệ khoảng cách động tác dựa trên chiều dài xương gốc bàn tay để chống sai số xa gần"""
     if "lmList" in hand and len(hand["lmList"]) >= 13:
         p0 = hand["lmList"][0]   # Wrist (Cổ tay)
         p5 = hand["lmList"][5]   # Index Finger Base (Gốc ngón trỏ)
         p12 = hand["lmList"][12] # Middle Finger Tip (Đầu ngón giữa)
         
-        # 1. Khoảng cách động tác thực tế (Wrist -> Middle Tip)
         act_dist = ((p12[0] - p0[0])**2 + (p12[1] - p0[1])**2) ** 0.5
-        
-        # 2. Khoảng cách tham chiếu cố định của bàn tay (Wrist -> Index Base)
         ref_dist = ((p5[0] - p0[0])**2 + (p5[1] - p0[1])**2) ** 0.5
         
         if ref_dist > 0:
-            # Trả về giá trị chuẩn hóa (tỷ lệ phần trăm)
             return (act_dist / ref_dist) * 100
     return 0.0
 
@@ -85,7 +79,7 @@ detector = HandDetector()
 exercise = DexterityExercise()
 stats = Statistics()
 
-# [2] Khởi tạo hàng đợi để làm mịn dữ liệu biên độ (Moving Average Filter)
+# Hàng đợi lọc làm mịn tín hiệu
 amplitude_filter_queue = deque(maxlen=CONFIG["FILTER_WINDOW"])
 
 # ==========================
@@ -105,6 +99,12 @@ session_history = []
 avg_reps = 0
 avg_speed = 0
 best_reps = 0
+
+# Các biến phục vụ thuật toán Peak-Detection và Calibration
+calibration_amplitudes = []
+calibration_baseline = 1.0  # Mặc định để tránh lỗi chia cho 0
+is_calibrating = False
+prev_status = "CLOSED"
 
 amplitude_history = []
 first_half_amplitude = []
@@ -140,8 +140,6 @@ while True:
         for hand in hands:
             fingers = count_fingers(hand)
             finger_count += fingers
-
-            # Gọi hàm tính biên độ chuẩn hóa
             raw_amplitude += calculate_normalized_amplitude(hand)
 
             if hand["type"] == "Left":
@@ -151,51 +149,89 @@ while True:
 
         raw_amplitude = raw_amplitude / len(hands)
         
-        # [2] Bộ lọc nhiễu: Chỉ xử lý khi biên độ hợp lệ (>0)
+        # Áp dụng bộ lọc Moving Average để làm mịn biên độ liên tục
         if raw_amplitude > 0:
             amplitude_filter_queue.append(raw_amplitude)
             
-        # Tính toán giá trị sau khi đã làm mịn bằng bộ lọc Moving Average
         current_amplitude = sum(amplitude_filter_queue) / len(amplitude_filter_queue) if amplitude_filter_queue else 0.0
-
-        if test_started and not paused and current_amplitude > 0:
-            exercise.update(finger_count)
-            amplitude_history.append(current_amplitude)
     else:
         current_amplitude = 0.0
 
+    # Trạng thái đóng mở real-time
+    status = "OPEN" if finger_count >= 4 else ("CLOSED" if finger_count <= 1 else "MOVING")
+    color = (0, 200, 0) if status == "OPEN" else ((0, 0, 220) if status == "CLOSED" else (0, 180, 220))
+
     # ==========================
-    # TIMER LOGIC
+    # TIMER & CALIBRATION LOGIC
     # ==========================
     if test_started and not paused:
         elapsed = time.time() - stats.start_time - total_pause_time
         
-        # Chia đôi 60s thành 2 pha độc lập để đo Fatigue Index (Sequence Effect)
-        if elapsed <= (CONFIG["MAX_TIME"] / 2):
+        # GIAI ĐOẠN 1: TỰ ĐỘNG HIỆU CHUẨN (3 GIÂY ĐẦU)
+        if elapsed <= CONFIG["CALIBRATION_TIME"]:
+            is_calibrating = True
+            session_status = "CALIBRATING... OPEN HAND WIDE"
             if current_amplitude > 0:
-                first_half_amplitude.append(current_amplitude)
+                calibration_amplitudes.append(current_amplitude)
+        
+        # GIAI ĐOẠN 2: BẮT ĐẦU ĐẾM VÀ TÍNH TOÁN LÂM SÀNG
         else:
-            if current_amplitude > 0:
-                second_half_amplitude.append(current_amplitude)
+            if is_calibrating:
+                # Kết thúc 3s hiệu chuẩn -> Tính toán Baseline gốc cho người test
+                is_calibrating = False
+                if calibration_amplitudes:
+                    calibration_baseline = sum(calibration_amplitudes) / len(calibration_amplitudes)
+                else:
+                    calibration_baseline = 100.0  # Fallback phòng hờ lỗi
+            
+            session_status = "RUNNING"
+            exercise.update(finger_count)
+
+            # Tính biên độ theo tỷ lệ % so với Baseline (Đã Calibrate)
+            scaled_amplitude = (current_amplitude / calibration_baseline) * 100 if calibration_baseline > 0 else 0.0
+
+            # THUẬT TOÁN PEAK-DETECTION (BẮT ĐỈNH): Chỉ lấy biên độ khi trạng thái chuyển sang OPEN tối đa
+            if prev_status != "OPEN" and status == "OPEN" and scaled_amplitude > 0:
+                amplitude_history.append(scaled_amplitude)
+                
+                # Chia đôi mốc thời gian thực tế để tính Fatigue Index chính xác
+                test_active_time = CONFIG["MAX_TIME"] - CONFIG["CALIBRATION_TIME"]
+                mid_point = CONFIG["CALIBRATION_TIME"] + (test_active_time / 2)
+                
+                if elapsed <= mid_point:
+                    first_half_amplitude.append(scaled_amplitude)
+                else:
+                    second_half_amplitude.append(scaled_amplitude)
+                    
     elif paused:
         elapsed = elapsed_before_pause
+        session_status = "PAUSED"
     else:
         elapsed = 0
+        session_status = "READY"
 
+    if finished:
+        session_status = "FINISHED"
+
+    prev_status = status  # Cập nhật trạng thái khung hình trước để dò sườn lên (Edge detection)
     remaining_time = max(0, CONFIG["MAX_TIME"] - int(elapsed))
 
     # ==========================
     # SPEED & AMPLITUDE LOSS
     # ==========================
-    speed = (elapsed / exercise.repetitions) if exercise.repetitions > 0 else 0
-    avg_amplitude = (sum(amplitude_history) / len(amplitude_history)) if amplitude_history else 0
+    # Tính thời gian thực tế làm bài test (trừ đi 3 giây calibrate)
+    actual_test_elapsed = max(0, elapsed - CONFIG["CALIBRATION_TIME"])
+    speed = (actual_test_elapsed / exercise.repetitions) if exercise.repetitions > 0 else 0
+    avg_amplitude = (sum(amplitude_history) / len(amplitude_history)) if amplitude_history else 0.0
 
     if first_half_amplitude and second_half_amplitude:
         first_avg = sum(first_half_amplitude) / len(first_half_amplitude)
         second_avg = sum(second_half_amplitude) / len(second_half_amplitude)
-        amplitude_decrement = (((first_avg - second_avg) / first_avg) * 100) if first_avg > 0 else 0
+        amplitude_decrement = (((first_avg - second_avg) / first_avg) * 100) if first_avg > 0 else 0.0
+        if amplitude_decrement < 0: 
+            amplitude_decrement = 0.0  # Nếu càng về sau biên độ càng tăng thì độ sụt giảm mỏi cơ bằng 0
     else:
-        amplitude_decrement = 0
+        amplitude_decrement = 0.0
     
     # ==========================
     # AUTOMATIC SESSION FINISH
@@ -220,10 +256,6 @@ while True:
     else:
         avg_reps = avg_speed = best_reps = 0
 
-    session_status = "FINISHED" if finished else ("PAUSED" if paused else ("RUNNING" if test_started else "READY"))
-    status = "OPEN" if finger_count >= 4 else ("CLOSED" if finger_count <= 1 else "MOVING")
-    color = (0, 200, 0) if status == "OPEN" else ((0, 0, 220) if status == "CLOSED" else (0, 180, 220))
-
     # ==========================
     # BACKGROUND UI PANEL
     # ==========================
@@ -234,7 +266,7 @@ while True:
     cv2.putText(img, f"Total Fingers : {finger_count}", (35, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
     cv2.putText(img, f"Status : {status}", (35, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
     cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
-    cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
+    cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 0, 0), 2)
     cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 255), 2)
     
     cv2.putText(img, last_result, (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (120, 0, 255), 2)
@@ -243,14 +275,16 @@ while True:
     cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 530), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (150, 0, 150), 2)
     cv2.putText(img, f"Best Reps : {best_reps}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
     
-    cv2.putText(img, f"Norm Amp : {current_amplitude:.1f}%", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 100, 0), 2)
+    # Hiển thị biên độ thời gian thực (được tính bằng % so với Baseline sau khi đã Calibrate)
+    display_amp = (current_amplitude / calibration_baseline) * 100 if test_started and not is_calibrating else 0.0
+    cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 100, 0), 2)
     cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 670), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
 
     # Bảng phím tắt điều khiển góc phải
-    cv2.putText(img, "B = Start", (950, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 0), 2)
-    cv2.putText(img, "P = Pause / Resume", (950, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 220), 2)
-    cv2.putText(img, "R = Reset All", (950, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
-    cv2.putText(img, "ESC = Exit", (950, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 200), 2)
+    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 0), 2)
+    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 220), 2)
+    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
+    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 200), 2)
 
     # ==========================================
     # [4] PROGRESS BAR UI NÂNG CAO (THANH TIẾN TRÌNH)
@@ -261,8 +295,10 @@ while True:
         bar_y = 680
         current_bar_x = int(bar_start_x + (bar_end_x - bar_start_x) * progress_ratio)
         
+        # Đổi màu thanh tiến trình: Màu cam khi đang Calibrate, màu tím khi đang Test
+        bar_color = (0, 165, 255) if is_calibrating else (255, 0, 180)
         cv2.rectangle(img, (bar_start_x, bar_y), (bar_end_x, bar_y + 15), (220, 220, 220), -1)
-        cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), (255, 0, 180), -1)
+        cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), bar_color, -1)
 
     # ==========================================
     # CLINICAL EVALUATION REPORT (POPUP SCREEN)
@@ -272,7 +308,7 @@ while True:
         cv2.rectangle(overlay, (0, 0), (1280, 720), (30, 30, 30), -1)
         cv2.addWeighted(overlay, 0.75, img, 0.25, 0, img)
 
-        bx1, by1, bx2, by2 = 180, 60, 1100, 660  # Mở rộng nhẹ khung popup để chứa text thoải mái
+        bx1, by1, bx2, by2 = 180, 60, 1100, 660
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (255, 255, 255), -1)
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (0, 80, 180), 4)
 
@@ -281,11 +317,11 @@ while True:
 
         cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
         cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
-        cv2.putText(img, f"Mean Norm Amp     :  {final_amplitude:.1f}% (Normalized Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
+        cv2.putText(img, f"Mean Peak Amplitude:  {final_amplitude:.1f}% (Calibrated Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
         cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
         cv2.line(img, (bx1 + 40, by1 + 225), (bx2 - 40, by1 + 225), (240, 240, 240), 1)
 
-        # --- PHÂN CẤP SỬ DỤNG CONFIG CHUẨN LÂM SÀNG ---
+        # --- PHÂN CẤP THEO CONFIG CHUẨN ĐỒ ÁN Y SINH ---
         if final_reps < CONFIG["THRESH_MOD_REPS"] or final_speed > CONFIG["THRESH_MOD_SPEED"] or final_decrement > CONFIG["THRESH_MOD_DECAY"]:
             assessment_str = "SEVERE PROFILE (Severe Bradykinesia & Hypokinesia)"
             status_color = (0, 0, 220)
@@ -295,7 +331,6 @@ while True:
                 "3. This software is only a screening aid; please do not panic and seek hospital medical tests."
             ]
         elif CONFIG["THRESH_MOD_REPS"] <= final_reps <= CONFIG["THRESH_NORM_REPS"] or CONFIG["THRESH_NORM_SPEED"] <= final_speed <= CONFIG["THRESH_MOD_SPEED"] or CONFIG["THRESH_NORM_DECAY"] <= final_decrement <= CONFIG["THRESH_MOD_DECAY"]:
-            # Khoảng Warning / Cảnh báo (Tương đương mức độ Nhẹ -> Trung bình tùy chỉ số)
             if final_reps <= 50 or final_speed >= 1.2 or final_decrement >= 20.0:
                 assessment_str = "MODERATE PROFILE (Significant Motor Slowdown)"
                 status_color = (0, 69, 255)
@@ -321,21 +356,19 @@ while True:
                 "3. Feel free to re-test on a monthly basis to monitor your long-term neuromotor trends."
             ]
 
-        # In phân tích lâm sàng cố định
         cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2)
         cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, status_color, 2)
         
-        # Vẽ khung nền chứa Lời khuyên bác sĩ
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (250, 250, 250), -1)
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (230, 230, 230), 1)
 
-        # Tiến hành quét và tự động cắt dòng thông minh cho lời khuyên
+        # Gọi hàm ngắt dòng tự động thông minh (Giới hạn 85 ký tự) chống tràn chữ tuyệt đối
         y_offset = by1 + 315
         for line in advice_lines:
-            wrapped_lines = wrap_text(line, max_chars=85)  # Giới hạn 85 ký tự mỗi dòng để vừa vặn khung hình
+            wrapped_lines = wrap_text(line, max_chars=85)
             for wrapped_line in wrapped_lines:
                 cv2.putText(img, wrapped_line, (bx1 + 60, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (40, 40, 40), 1, cv2.LINE_AA)
-                y_offset += 35  # Giãn dòng hợp lý không lo bị chồng chữ
+                y_offset += 35
 
         cv2.line(img, (bx1 + 40, by1 + 560), (bx2 - 40, by1 + 560), (220, 220, 220), 2)
         cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 210, by1 + 600), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 100, 100), 2)
@@ -356,16 +389,20 @@ while True:
         test_started = True
         paused = False
         finished = False
+        is_calibrating = True
         stats.start_time = time.time()
         total_pause_time = 0
         raw_amplitude = 0.0
         avg_amplitude = 0
         amplitude_decrement = 0
+        calibration_baseline = 1.0
+        calibration_amplitudes.clear()
         amplitude_history.clear()
         first_half_amplitude.clear()
         second_half_amplitude.clear()
         amplitude_filter_queue.clear()
         exercise.repetitions = 0
+        prev_status = "CLOSED"
 
     elif key == ord('p'):
         if test_started:
@@ -384,26 +421,33 @@ while True:
         total_pause_time = 0
         avg_amplitude = 0
         amplitude_decrement = 0
+        calibration_baseline = 1.0
+        calibration_amplitudes.clear()
         amplitude_history.clear()
         first_half_amplitude.clear()
         second_half_amplitude.clear()
         amplitude_filter_queue.clear()
         exercise.repetitions = 0
+        prev_status = "CLOSED"
 
     elif key == ord('r'):
         exercise.repetitions = 0
         test_started = False
         paused = False
         finished = False
+        is_calibrating = False
         total_pause_time = 0
         avg_amplitude = 0
         amplitude_decrement = 0
+        calibration_baseline = 1.0
+        calibration_amplitudes.clear()
         amplitude_history.clear()
         first_half_amplitude.clear()
         second_half_amplitude.clear()
         amplitude_filter_queue.clear()
         last_result = "No previous session"
         session_history.clear()
+        prev_status = "CLOSED"
 
     elif key == 27:
         break
