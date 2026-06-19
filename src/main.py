@@ -14,17 +14,39 @@ from statistics import Statistics
 
 # ==========================================
 # [5] CONFIGURATION SETTINGS (BIẾN CẤU HÌNH)
+# Cập nhật chuẩn theo bảng đánh giá lâm sàng
 # ==========================================
 CONFIG = {
     "MAX_TIME": 60,              # Thời gian chạy bài test (giây)
     "FILTER_WINDOW": 5,          # Độ lớn cửa sổ lọc nhiễu Moving Average
-    "THRESH_NORM_REPS": 70,      # Ngưỡng Reps bình thường
-    "THRESH_MILD_REPS": 50,      # Ngưỡng Reps nhẹ
-    "THRESH_MOD_REPS": 30,       # Ngưỡng Reps trung bình
-    "THRESH_NORM_DECAY": 10.0,   # Ngưỡng sụt giảm biên độ bình thường (%)
-    "THRESH_MILD_DECAY": 20.0,   # Ngưỡng sụt giảm biên độ nhẹ (%)
-    "THRESH_MOD_DECAY": 40.0,    # Ngưỡng sụt giảm biên độ trung bình (%)
+    "THRESH_NORM_REPS": 70,      # Bình thường (Good): > 70 reps
+    "THRESH_MOD_REPS": 40,       # Nguy cơ cao (High Risk): < 40 reps (Còn lại từ 40-70 là Cảnh báo)
+    "THRESH_NORM_SPEED": 0.8,    # Bình thường (Good): < 0.8 s/cycle
+    "THRESH_MOD_SPEED": 1.5,     # Nguy cơ cao (High Risk): > 1.5 s/cycle
+    "THRESH_NORM_DECAY": 10.0,   # Bình thường (Good): < 10%
+    "THRESH_MOD_DECAY": 25.0,    # Nguy cơ cao (High Risk): > 25%
 }
+
+# ==========================================
+# TỰ ĐỘNG XỬ LÝ XUỐNG DÒNG CHO VĂN BẢN DÀI
+# ==========================================
+def wrap_text(text, max_chars):
+    """Bọc văn bản thành danh sách các dòng với số ký tự tối đa quy định"""
+    words = text.split()
+    lines = []
+    current_line = []
+    current_length = 0
+    for word in words:
+        if current_length + len(word) + len(current_line) <= max_chars:
+            current_line.append(word)
+            current_length += len(word)
+        else:
+            lines.append(" ".join(current_line))
+            current_line = [word]
+            current_length = len(word)
+    if current_line:
+        lines.append(" ".join(current_line))
+    return lines
 
 # ==========================================
 # [1] NORMALIZED AMPLITUDE FUNCTION WITH FILTER
@@ -239,9 +261,7 @@ while True:
         bar_y = 680
         current_bar_x = int(bar_start_x + (bar_end_x - bar_start_x) * progress_ratio)
         
-        # Vẽ thanh nền xám mờ
         cv2.rectangle(img, (bar_start_x, bar_y), (bar_end_x, bar_y + 15), (220, 220, 220), -1)
-        # Vẽ thanh tiến trình động màu tím hồng
         cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), (255, 0, 180), -1)
 
     # ==========================================
@@ -252,70 +272,73 @@ while True:
         cv2.rectangle(overlay, (0, 0), (1280, 720), (30, 30, 30), -1)
         cv2.addWeighted(overlay, 0.75, img, 0.25, 0, img)
 
-        bx1, by1, bx2, by2 = 220, 100, 1060, 620
+        bx1, by1, bx2, by2 = 180, 60, 1100, 660  # Mở rộng nhẹ khung popup để chứa text thoải mái
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (255, 255, 255), -1)
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (0, 80, 180), 4)
 
-        cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 130, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 80, 180), 3)
+        cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 80, 180), 3)
         cv2.line(img, (bx1 + 40, by1 + 70), (bx2 - 40, by1 + 70), (220, 220, 220), 2)
 
         cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
-        cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <0.8s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
+        cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
         cv2.putText(img, f"Mean Norm Amp     :  {final_amplitude:.1f}% (Normalized Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
         cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
         cv2.line(img, (bx1 + 40, by1 + 225), (bx2 - 40, by1 + 225), (240, 240, 240), 1)
 
-        # --- LOGIC PHÂN CẤP SỬ DỤNG BIẾN TOÀN CỤC CONFIG ---
-        if final_reps < CONFIG["THRESH_MOD_REPS"] or final_speed > 2.0 or final_decrement > CONFIG["THRESH_MOD_DECAY"]:
+        # --- PHÂN CẤP SỬ DỤNG CONFIG CHUẨN LÂM SÀNG ---
+        if final_reps < CONFIG["THRESH_MOD_REPS"] or final_speed > CONFIG["THRESH_MOD_SPEED"] or final_decrement > CONFIG["THRESH_MOD_DECAY"]:
             assessment_str = "SEVERE PROFILE (Severe Bradykinesia & Hypokinesia)"
             status_color = (0, 0, 220)
             advice_lines = [
-                "Clinical Analysis: High motor degradation and severe amplitude decay detected.",
                 "1. Strongly advise scheduling an examination with a neurologist as soon as possible.",
                 "2. Note down daily life motor errors (e.g., small handwriting, shaking, stiffness).",
-                "3. This software is only a screening aid; please do not panic and seek hospital tests."
+                "3. This software is only a screening aid; please do not panic and seek hospital medical tests."
             ]
-        elif CONFIG["THRESH_MOD_REPS"] <= final_reps <= CONFIG["THRESH_MILD_REPS"] or 1.2 <= final_speed <= 2.0 or CONFIG["THRESH_MILD_DECAY"] <= final_decrement <= CONFIG["THRESH_MOD_DECAY"]:
-            assessment_str = "MODERATE PROFILE (Significant Motor Slowdown)"
-            status_color = (0, 69, 255)
-            advice_lines = [
-                "Clinical Analysis: Clear signs of bradykinesia and reduced movement range observed.",
-                "1. Recommended to visit a neurology clinic for professional clinical evaluation.",
-                "2. Avoid any excessive hand fatigue or manual work right before taking future tests.",
-                "3. Keep records/screenshots of this report history to present to your physician."
-            ]
-        elif CONFIG["THRESH_MILD_REPS"] < final_reps <= CONFIG["THRESH_NORM_REPS"] or 0.8 <= final_speed < 1.2 or CONFIG["THRESH_NORM_DECAY"] <= final_decrement < CONFIG["THRESH_MILD_DECAY"]:
-            assessment_str = "MILD PROFILE (Early Motor Fatigue / Slight Slowdown)"
-            status_color = (0, 165, 255)
-            advice_lines = [
-                "Clinical Analysis: Minor slowdown or hand muscular fatigue detected near the end of session.",
-                "1. Retest for 3-5 days at fixed hours to verify if this fatigue pattern is consistent.",
-                "2. Perform targeted fine-motor exercises at home (finger tapping, squeezing soft rubber balls).",
-                "3. Ensure adequate rest (>7 hours of sleep) and avoid high stress before testing again."
-            ]
+        elif CONFIG["THRESH_MOD_REPS"] <= final_reps <= CONFIG["THRESH_NORM_REPS"] or CONFIG["THRESH_NORM_SPEED"] <= final_speed <= CONFIG["THRESH_MOD_SPEED"] or CONFIG["THRESH_NORM_DECAY"] <= final_decrement <= CONFIG["THRESH_MOD_DECAY"]:
+            # Khoảng Warning / Cảnh báo (Tương đương mức độ Nhẹ -> Trung bình tùy chỉ số)
+            if final_reps <= 50 or final_speed >= 1.2 or final_decrement >= 20.0:
+                assessment_str = "MODERATE PROFILE (Significant Motor Slowdown)"
+                status_color = (0, 69, 255)
+                advice_lines = [
+                    "1. Recommended to visit a neurology clinic for professional clinical evaluation.",
+                    "2. Avoid any excessive hand fatigue or manual work right before taking future tests.",
+                    "3. Keep records/screenshots of this report history to present to your physician."
+                ]
+            else:
+                assessment_str = "MILD PROFILE (Early Motor Fatigue / Slight Slowdown)"
+                status_color = (0, 165, 255)
+                advice_lines = [
+                    "1. Retest for 3-5 days at fixed hours to verify if this fatigue pattern is consistent.",
+                    "2. Perform targeted fine-motor exercises at home (finger tapping, squeezing soft rubber balls).",
+                    "3. Ensure adequate rest (>7 hours of sleep) and avoid high stress before testing again."
+                ]
         else:
             assessment_str = "NORMAL PROFILE (Healthy Motor Control & Speed)"
             status_color = (0, 180, 0)
             advice_lines = [
-                "Clinical Analysis: Excellent speed and highly stable movement range maintained throughout.",
                 "1. No abnormal clinical signs of bradykinesia or neuromuscular fatigue were found.",
                 "2. Continue regular active physical exercise and routine checkups to preserve health.",
                 "3. Feel free to re-test on a monthly basis to monitor your long-term neuromotor trends."
             ]
 
+        # In phân tích lâm sàng cố định
         cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2)
         cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, status_color, 2)
         
-        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 490), (250, 250, 250), -1)
-        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 490), (230, 230, 230), 1)
+        # Vẽ khung nền chứa Lời khuyên bác sĩ
+        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (250, 250, 250), -1)
+        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (230, 230, 230), 1)
 
+        # Tiến hành quét và tự động cắt dòng thông minh cho lời khuyên
         y_offset = by1 + 315
         for line in advice_lines:
-            cv2.putText(img, line, (bx1 + 60, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (40, 40, 40), 1, cv2.LINE_AA)
-            y_offset += 40
+            wrapped_lines = wrap_text(line, max_chars=85)  # Giới hạn 85 ký tự mỗi dòng để vừa vặn khung hình
+            for wrapped_line in wrapped_lines:
+                cv2.putText(img, wrapped_line, (bx1 + 60, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (40, 40, 40), 1, cv2.LINE_AA)
+                y_offset += 35  # Giãn dòng hợp lý không lo bị chồng chữ
 
-        cv2.line(img, (bx1 + 40, by1 + 520), (bx2 - 40, by1 + 520), (220, 220, 220), 2)
-        cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 155, by1 + 560), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 100, 100), 2)
+        cv2.line(img, (bx1 + 40, by1 + 560), (bx2 - 40, by1 + 560), (220, 220, 220), 2)
+        cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 210, by1 + 600), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 100, 100), 2)
 
     # ==========================
     # WINDOW RENDERING
