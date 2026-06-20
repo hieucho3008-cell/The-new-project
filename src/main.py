@@ -259,6 +259,7 @@ while True:
     # ==========================
     # BACKGROUND UI PANEL
     # ==========================
+    cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
@@ -287,7 +288,7 @@ while True:
     cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 200), 2)
 
     # ==========================================
-    # [4] PROGRESS BAR UI NÂNG CAO (THANH TIẾN TRÌNH)
+    # PROGRESS BAR UI NÂNG CAO (THANH TIẾN TRÌNH)
     # ==========================================
     if test_started and not paused:
         progress_ratio = elapsed / CONFIG["MAX_TIME"]
@@ -310,21 +311,22 @@ while True:
 
         bx1, by1, bx2, by2 = 180, 60, 1100, 660
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (255, 255, 255), -1)
-        cv2.rectangle(img, (bx1, by1), (bx2, by2), (0, 80, 180), 4)
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (80, 80, 80), 3)  # Màu viền xám trung tính
 
-        cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 80, 180), 3)
+        # Tiêu đề báo cáo - Màu xám đen tối giản (40, 40, 40)
+        cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (40, 40, 40), 3)
         cv2.line(img, (bx1 + 40, by1 + 70), (bx2 - 40, by1 + 70), (220, 220, 220), 2)
 
-        cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
-        cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
-        cv2.putText(img, f"Mean Peak Amplitude:  {final_amplitude:.1f}% (Calibrated Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
-        cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (50, 50, 50), 2)
+        # Toàn bộ các thông số chỉ số - Độc bản màu xám đen (40, 40, 40)
+        cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
+        cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
+        cv2.putText(img, f"Mean Peak Amplitude:  {final_amplitude:.1f}% (Calibrated Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
+        cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
         cv2.line(img, (bx1 + 40, by1 + 225), (bx2 - 40, by1 + 225), (240, 240, 240), 1)
 
-        # --- PHÂN CẤP THEO CONFIG CHUẨN ĐỒ ÁN Y SINH ---
+        # --- LOGIC PHÂN LOẠI GIỮ NGUYÊN - MÀU CHỮ ĐỒNG BỘ XÁM ĐEN ---
         if final_reps < CONFIG["THRESH_MOD_REPS"] or final_speed > CONFIG["THRESH_MOD_SPEED"] or final_decrement > CONFIG["THRESH_MOD_DECAY"]:
             assessment_str = "SEVERE PROFILE (Severe Bradykinesia & Hypokinesia)"
-            status_color = (0, 0, 220)
             advice_lines = [
                 "1. Strongly advise scheduling an examination with a neurologist as soon as possible.",
                 "2. Note down daily life motor errors (e.g., small handwriting, shaking, stiffness).",
@@ -333,7 +335,6 @@ while True:
         elif CONFIG["THRESH_MOD_REPS"] <= final_reps <= CONFIG["THRESH_NORM_REPS"] or CONFIG["THRESH_NORM_SPEED"] <= final_speed <= CONFIG["THRESH_MOD_SPEED"] or CONFIG["THRESH_NORM_DECAY"] <= final_decrement <= CONFIG["THRESH_MOD_DECAY"]:
             if final_reps <= 50 or final_speed >= 1.2 or final_decrement >= 20.0:
                 assessment_str = "MODERATE PROFILE (Significant Motor Slowdown)"
-                status_color = (0, 69, 255)
                 advice_lines = [
                     "1. Recommended to visit a neurology clinic for professional clinical evaluation.",
                     "2. Avoid any excessive hand fatigue or manual work right before taking future tests.",
@@ -341,7 +342,6 @@ while True:
                 ]
             else:
                 assessment_str = "MILD PROFILE (Early Motor Fatigue / Slight Slowdown)"
-                status_color = (0, 165, 255)
                 advice_lines = [
                     "1. Retest for 3-5 days at fixed hours to verify if this fatigue pattern is consistent.",
                     "2. Perform targeted fine-motor exercises at home (finger tapping, squeezing soft rubber balls).",
@@ -349,20 +349,20 @@ while True:
                 ]
         else:
             assessment_str = "NORMAL PROFILE (Healthy Motor Control & Speed)"
-            status_color = (0, 180, 0)
             advice_lines = [
                 "1. No abnormal clinical signs of bradykinesia or neuromuscular fatigue were found.",
                 "2. Continue regular active physical exercise and routine checkups to preserve health.",
                 "3. Feel free to re-test on a monthly basis to monitor your long-term neuromotor trends."
             ]
 
-        cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2)
-        cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, status_color, 2)
+        # Khung kết quả tổng quan và văn bản tư vấn - Thống nhất màu xám đen (40, 40, 40)
+        cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
+        cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
         
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (250, 250, 250), -1)
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (230, 230, 230), 1)
 
-        # Gọi hàm ngắt dòng tự động thông minh (Giới hạn 85 ký tự) chống tràn chữ tuyệt đối
+        # Đọc mảng và viết chữ xuống dòng tự động chống tràn hình
         y_offset = by1 + 315
         for line in advice_lines:
             wrapped_lines = wrap_text(line, max_chars=85)
@@ -371,7 +371,7 @@ while True:
                 y_offset += 35
 
         cv2.line(img, (bx1 + 40, by1 + 560), (bx2 - 40, by1 + 560), (220, 220, 220), 2)
-        cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 210, by1 + 600), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (100, 100, 100), 2)
+        cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 210, by1 + 600), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (120, 120, 120), 2)
 
     # ==========================
     # WINDOW RENDERING
