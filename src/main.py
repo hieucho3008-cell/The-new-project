@@ -157,9 +157,8 @@ while True:
     else:
         current_amplitude = 0.0
 
-    # Trạng thái đóng mở real-time
+    # Xác định trạng thái đóng mở real-time
     status = "OPEN" if finger_count >= 4 else ("CLOSED" if finger_count <= 1 else "MOVING")
-    color = (0, 200, 0) if status == "OPEN" else ((0, 0, 220) if status == "CLOSED" else (0, 180, 220))
 
     # ==========================
     # TIMER & CALIBRATION LOGIC
@@ -177,12 +176,11 @@ while True:
         # GIAI ĐOẠN 2: BẮT ĐẦU ĐẾM VÀ TÍNH TOÁN LÂM SÀNG
         else:
             if is_calibrating:
-                # Kết thúc 3s hiệu chuẩn -> Tính toán Baseline gốc cho người test
                 is_calibrating = False
                 if calibration_amplitudes:
                     calibration_baseline = sum(calibration_amplitudes) / len(calibration_amplitudes)
                 else:
-                    calibration_baseline = 100.0  # Fallback phòng hờ lỗi
+                    calibration_baseline = 100.0
             
             session_status = "RUNNING"
             exercise.update(finger_count)
@@ -190,11 +188,10 @@ while True:
             # Tính biên độ theo tỷ lệ % so với Baseline (Đã Calibrate)
             scaled_amplitude = (current_amplitude / calibration_baseline) * 100 if calibration_baseline > 0 else 0.0
 
-            # THUẬT TOÁN PEAK-DETECTION (BẮT ĐỈNH): Chỉ lấy biên độ khi trạng thái chuyển sang OPEN tối đa
+            # THUẬT TOÁN PEAK-DETECTION (BẮT ĐỈNH)
             if prev_status != "OPEN" and status == "OPEN" and scaled_amplitude > 0:
                 amplitude_history.append(scaled_amplitude)
                 
-                # Chia đôi mốc thời gian thực tế để tính Fatigue Index chính xác
                 test_active_time = CONFIG["MAX_TIME"] - CONFIG["CALIBRATION_TIME"]
                 mid_point = CONFIG["CALIBRATION_TIME"] + (test_active_time / 2)
                 
@@ -213,13 +210,12 @@ while True:
     if finished:
         session_status = "FINISHED"
 
-    prev_status = status  # Cập nhật trạng thái khung hình trước để dò sườn lên (Edge detection)
+    prev_status = status  
     remaining_time = max(0, CONFIG["MAX_TIME"] - int(elapsed))
 
     # ==========================
     # SPEED & AMPLITUDE LOSS
     # ==========================
-    # Tính thời gian thực tế làm bài test (trừ đi 3 giây calibrate)
     actual_test_elapsed = max(0, elapsed - CONFIG["CALIBRATION_TIME"])
     speed = (actual_test_elapsed / exercise.repetitions) if exercise.repetitions > 0 else 0
     avg_amplitude = (sum(amplitude_history) / len(amplitude_history)) if amplitude_history else 0.0
@@ -229,7 +225,7 @@ while True:
         second_avg = sum(second_half_amplitude) / len(second_half_amplitude)
         amplitude_decrement = (((first_avg - second_avg) / first_avg) * 100) if first_avg > 0 else 0.0
         if amplitude_decrement < 0: 
-            amplitude_decrement = 0.0  # Nếu càng về sau biên độ càng tăng thì độ sụt giảm mỏi cơ bằng 0
+            amplitude_decrement = 0.0
     else:
         amplitude_decrement = 0.0
     
@@ -256,39 +252,38 @@ while True:
     else:
         avg_reps = avg_speed = best_reps = 0
 
-    # ==========================
-    # BACKGROUND UI PANEL
-    # ==========================
+    # ========================================================
+    # BACKGROUND UI PANEL - CHUYỂN HẾT CHỮ VỀ MÀU ĐEN (0, 0, 0)
+    # ========================================================
     cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     
-    cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
-    cv2.putText(img, f"Right Hand : {right_count}", (35, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (50, 50, 50), 2)
-    cv2.putText(img, f"Total Fingers : {finger_count}", (35, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
-    cv2.putText(img, f"Status : {status}", (35, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.65, color, 2)
-    cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
-    cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 0, 0), 2)
-    cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 255), 2)
+    cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Right Hand : {right_count}", (35, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Total Fingers : {finger_count}", (35, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Status : {status}", (35, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2)
+    cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
     
-    cv2.putText(img, last_result, (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (120, 0, 255), 2)
+    cv2.putText(img, last_result, (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
     cv2.putText(img, f"Total Sessions : {len(session_history)}", (35, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 150, 0), 2)
-    cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 530), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (150, 0, 150), 2)
-    cv2.putText(img, f"Best Reps : {best_reps}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
+    cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 530), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Best Reps : {best_reps}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
     
-    # Hiển thị biên độ thời gian thực (được tính bằng % so với Baseline sau khi đã Calibrate)
     display_amp = (current_amplitude / calibration_baseline) * 100 if test_started and not is_calibrating else 0.0
-    cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 100, 0), 2)
-    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 670), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 255), 2)
+    cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 670), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
 
-    # Bảng phím tắt điều khiển góc phải
-    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 0), 2)
-    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 200, 220), 2)
-    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 0, 0), 2)
-    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 200), 2)
+    # Bảng phím tắt điều khiển góc phải - Đồng bộ màu xám đen gọn gàng
+    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
+    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
+    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
+    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
 
     # ==========================================
-    # PROGRESS BAR UI NÂNG CAO (THANH TIẾN TRÌNH)
+    # PROGRESS BAR UI (THANH TIẾN TRÌNH)
     # ==========================================
     if test_started and not paused:
         progress_ratio = elapsed / CONFIG["MAX_TIME"]
@@ -296,10 +291,9 @@ while True:
         bar_y = 680
         current_bar_x = int(bar_start_x + (bar_end_x - bar_start_x) * progress_ratio)
         
-        # Đổi màu thanh tiến trình: Màu cam khi đang Calibrate, màu tím khi đang Test
-        bar_color = (0, 165, 255) if is_calibrating else (255, 0, 180)
+        # Giữ thanh tiến trình màu xám đậm để không bị sặc sỡ
         cv2.rectangle(img, (bar_start_x, bar_y), (bar_end_x, bar_y + 15), (220, 220, 220), -1)
-        cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), bar_color, -1)
+        cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), (80, 80, 80), -1)
 
     # ==========================================
     # CLINICAL EVALUATION REPORT (POPUP SCREEN)
@@ -311,7 +305,7 @@ while True:
 
         bx1, by1, bx2, by2 = 180, 60, 1100, 660
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (255, 255, 255), -1)
-        cv2.rectangle(img, (bx1, by1), (bx2, by2), (80, 80, 80), 3)  # Màu viền xám trung tính
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (80, 80, 80), 3)  
 
         # Tiêu đề báo cáo - Màu xám đen tối giản (40, 40, 40)
         cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (40, 40, 40), 3)
@@ -324,7 +318,7 @@ while True:
         cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
         cv2.line(img, (bx1 + 40, by1 + 225), (bx2 - 40, by1 + 225), (240, 240, 240), 1)
 
-        # --- LOGIC PHÂN LOẠI GIỮ NGUYÊN - MÀU CHỮ ĐỒNG BỘ XÁM ĐEN ---
+        # --- LOGIC PHÂN LOẠI - ĐỒNG BỘ MÀU CHỮ XÁM ĐEN (40, 40, 40) ---
         if final_reps < CONFIG["THRESH_MOD_REPS"] or final_speed > CONFIG["THRESH_MOD_SPEED"] or final_decrement > CONFIG["THRESH_MOD_DECAY"]:
             assessment_str = "SEVERE PROFILE (Severe Bradykinesia & Hypokinesia)"
             advice_lines = [
@@ -362,7 +356,7 @@ while True:
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (250, 250, 250), -1)
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (230, 230, 230), 1)
 
-        # Đọc mảng và viết chữ xuống dòng tự động chống tràn hình
+        # In chữ xuống dòng tự động chống tràn hình
         y_offset = by1 + 315
         for line in advice_lines:
             wrapped_lines = wrap_text(line, max_chars=85)
