@@ -255,7 +255,6 @@ while True:
     # ========================================================
     # BACKGROUND UI PANEL - CHUYỂN HẾT CHỮ VỀ MÀU ĐEN (0, 0, 0)
     # ========================================================
-    cv2.rectangle(img, (20, 20), (520, 700), (255, 255, 255), -1)
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
     
     cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
