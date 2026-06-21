@@ -258,6 +258,10 @@ while True:
     # =========================================================================
     # BACKGROUND UI PANEL - PHỐI MÀU THEO PHONG CÁCH MONITOR Y TẾ (DARK MODE)
     # =========================================================================
+    # Nền panel bên trái màu xám đen/đen tuyền huyền bí của monitor chuyên dụng
+    cv2.rectangle(img, (20, 20), (520, 700), (15, 15, 15), -1)
+    cv2.rectangle(img, (20, 20), (520, 700), (50, 50, 50), 2) 
+    
     # Tiêu đề chính - Chữ trắng tinh khiết nổi bật
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (255, 255, 255), 2)
     cv2.line(img, (35, 75), (505, 75), (40, 40, 40), 1)
@@ -287,11 +291,11 @@ while True:
     cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 650), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
     cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 680), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
 
-    # Bảng phím tắt điều khiển góc phải
-    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
-    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
-    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
-    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
+    # ĐOẠN ĐƯỢC ĐỔI THÀNH MÀU ĐEN (0, 0, 0) THEO YÊU CẦU
+    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
 
     # ==========================================
     # PROGRESS BAR UI (THANH TIẾN TRÌNH)
