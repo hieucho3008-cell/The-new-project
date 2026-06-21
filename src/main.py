@@ -213,6 +213,9 @@ while True:
     prev_status = status  
     remaining_time = max(0, CONFIG["MAX_TIME"] - int(elapsed))
 
+    # ĐỊNH NGHĨA SỚM BIẾN ĐỂ TRÁNH LỖI NAMEERROR KHI CHƯA CHẠY BÀI TEST
+    display_amp = (current_amplitude / calibration_baseline) * 100 if test_started and not is_calibrating else 0.0
+
     # ==========================
     # SPEED & AMPLITUDE LOSS
     # ==========================
@@ -255,15 +258,15 @@ while True:
     # =========================================================================
     # BACKGROUND UI PANEL - PHỐI MÀU THEO PHONG CÁCH MONITOR Y TẾ (DARK MODE)
     # =========================================================================
-    # Đổi nền panel bên trái thành màu xám đen/đen tuyền huyền bí của monitor chuyên dụng
+    # Nền panel bên trái màu xám đen/đen tuyền huyền bí của monitor chuyên dụng
     cv2.rectangle(img, (20, 20), (520, 700), (15, 15, 15), -1)
-    cv2.rectangle(img, (20, 20), (520, 700), (50, 50, 50), 2) # Viền hộp nhẹ
+    cv2.rectangle(img, (20, 20), (520, 700), (50, 50, 50), 2) 
     
     # Tiêu đề chính - Chữ trắng tinh khiết nổi bật
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (255, 255, 255), 2)
     cv2.line(img, (35, 75), (505, 75), (40, 40, 40), 1)
     
-    # 1. NHÓM CHỈ SỐ CƠ HỌC (BIOLOGICAL MEASUREMENTS) -> Xanh lá Neon dịu mát (0, 230, 0)
+    # 1. NHÓM CHỈ SỐ CƠ HỌC -> Xanh lá Neon dịu mát (0, 230, 0)
     cv2.putText(img, f"Left Hand : {left_count}", (35, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
     cv2.putText(img, f"Right Hand : {right_count}", (35, 155), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
     cv2.putText(img, f"Total Fingers : {finger_count}", (35, 195), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
@@ -277,18 +280,18 @@ while True:
     cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 375), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
     cv2.line(img, (35, 400), (505, 400), (40, 40, 40), 1)
     
-    # 4. LỊCH SỬ VÀ THỐNG KÊ (ANALYTICS HISTORY) -> Vàng Hổ Phách sang trọng (0, 210, 255)
+    # 4. LỊCH SỬ VÀ THỐNG KÊ -> Vàng Hổ Phách sang trọng (0, 210, 255)
     cv2.putText(img, last_result, (35, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.60, (0, 210, 255), 2)
     cv2.putText(img, f"Total Sessions : {len(session_history)}", (35, 480), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
     cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 520), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
     cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 560), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
     cv2.putText(img, f"Best Reps : {best_reps}", (35, 600), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
     
-    # 5. BIÊN ĐỘ VÀ ĐỘ MỎI CƠ (WAVEFORM METRICS) -> Màu Đỏ Cam Monitor (0, 60, 240)
+    # 5. BIÊN ĐỘ VÀ ĐỘ MỎI CƠ -> Màu Đỏ Cam Monitor (0, 60, 240)
     cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 650), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
     cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 680), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
 
-    # Bảng phím tắt điều khiển góc phải - Đồng bộ màu xám trắng để chìm xuống, tập trung vào trung tâm
+    # Bảng phím tắt điều khiển góc phải
     cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
     cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
     cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
@@ -303,7 +306,6 @@ while True:
         bar_y = 680
         current_bar_x = int(bar_start_x + (bar_end_x - bar_start_x) * progress_ratio)
         
-        # Thanh tiến trình dùng màu xanh ngọc bích cực kỳ công nghệ
         cv2.rectangle(img, (bar_start_x, bar_y), (bar_end_x, bar_y + 15), (40, 40, 40), -1)
         cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), (255, 200, 0), -1)
 
@@ -316,14 +318,12 @@ while True:
         cv2.addWeighted(overlay, 0.85, img, 0.15, 0, img)
 
         bx1, by1, bx2, by2 = 180, 60, 1100, 660
-        cv2.rectangle(img, (bx1, by1), (bx2, by2), (25, 25, 25), -1) # Popup dạng tối tinh tế
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (25, 25, 25), -1) 
         cv2.rectangle(img, (bx1, by1), (bx2, by2), (80, 80, 80), 2)  
 
-        # Tiêu đề báo cáo kết quả tổng
         cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 3)
         cv2.line(img, (bx1 + 40, by1 + 70), (bx2 - 40, by1 + 70), (60, 60, 60), 1)
 
-        # Toàn bộ các thông số chỉ số trong popup dùng màu trắng sữa dịu mắt
         cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
         cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
         cv2.putText(img, f"Mean Peak Amplitude:  {final_amplitude:.1f}% (Calibrated Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
@@ -361,14 +361,12 @@ while True:
                 "3. Feel free to re-test on a monthly basis to monitor your long-term neuromotor trends."
             ]
 
-        # Khung kết quả đánh giá tổng quan trong Popup
         cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 2)
-        cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 210, 255), 2) # Làm nổi bật bằng màu vàng hổ phách
+        cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 210, 255), 2) 
         
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (35, 35, 35), -1)
         cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (50, 50, 50), 1)
 
-        # In chữ hướng dẫn lời khuyên y khoa
         y_offset = by1 + 315
         for line in advice_lines:
             wrapped_lines = wrap_text(line, max_chars=85)
