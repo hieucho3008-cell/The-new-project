@@ -258,10 +258,6 @@ while True:
     # =========================================================================
     # BACKGROUND UI PANEL - PHỐI MÀU THEO PHONG CÁCH MONITOR Y TẾ (DARK MODE)
     # =========================================================================
-    # Nền panel bên trái màu xám đen/đen tuyền huyền bí của monitor chuyên dụng
-    cv2.rectangle(img, (20, 20), (520, 700), (15, 15, 15), -1)
-    cv2.rectangle(img, (20, 20), (520, 700), (50, 50, 50), 2) 
-    
     # Tiêu đề chính - Chữ trắng tinh khiết nổi bật
     cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (255, 255, 255), 2)
     cv2.line(img, (35, 75), (505, 75), (40, 40, 40), 1)
