@@ -252,34 +252,47 @@ while True:
     else:
         avg_reps = avg_speed = best_reps = 0
 
-    # ========================================================
-    # BACKGROUND UI PANEL - CHUYỂN HẾT CHỮ VỀ MÀU ĐEN (0, 0, 0)
-    # ========================================================
-    cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 2)
+    # =========================================================================
+    # BACKGROUND UI PANEL - PHỐI MÀU THEO PHONG CÁCH MONITOR Y TẾ (DARK MODE)
+    # =========================================================================
+    # Đổi nền panel bên trái thành màu xám đen/đen tuyền huyền bí của monitor chuyên dụng
+    cv2.rectangle(img, (20, 20), (520, 700), (15, 15, 15), -1)
+    cv2.rectangle(img, (20, 20), (520, 700), (50, 50, 50), 2) # Viền hộp nhẹ
     
-    cv2.putText(img, f"Left Hand : {left_count}", (35, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Right Hand : {right_count}", (35, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Total Fingers : {finger_count}", (35, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Status : {status}", (35, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Session : {session_status}", (35, 310), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2)
-    cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 350), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    # Tiêu đề chính - Chữ trắng tinh khiết nổi bật
+    cv2.putText(img, "HAND DEXTERITY ASSESSMENT", (35, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.72, (255, 255, 255), 2)
+    cv2.line(img, (35, 75), (505, 75), (40, 40, 40), 1)
     
-    cv2.putText(img, last_result, (35, 410), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Total Sessions : {len(session_history)}", (35, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 490), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 530), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Best Reps : {best_reps}", (35, 570), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    # 1. NHÓM CHỈ SỐ CƠ HỌC (BIOLOGICAL MEASUREMENTS) -> Xanh lá Neon dịu mát (0, 230, 0)
+    cv2.putText(img, f"Left Hand : {left_count}", (35, 115), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
+    cv2.putText(img, f"Right Hand : {right_count}", (35, 155), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
+    cv2.putText(img, f"Total Fingers : {finger_count}", (35, 195), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
+    cv2.putText(img, f"Repetitions : {exercise.repetitions}", (35, 235), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 230, 0), 2)
     
-    display_amp = (current_amplitude / calibration_baseline) * 100 if test_started and not is_calibrating else 0.0
-    cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 630), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
-    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 670), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 0, 0), 2)
+    # 2. NHÓM TRẠNG THÁI HỆ THỐNG -> Xanh dương Monitor / Cyan sắc sảo (255, 220, 0)
+    cv2.putText(img, f"Status : {status}", (35, 285), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 220, 0), 2)
+    cv2.putText(img, f"Session : {session_status}", (35, 325), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (255, 220, 0), 2)
+    
+    # 3. THỜI GIAN ĐẾM NGƯỢC -> Đỏ Cam Cảnh báo phản xạ nhanh (0, 60, 240)
+    cv2.putText(img, f"Time Left : {remaining_time} sec", (35, 375), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
+    cv2.line(img, (35, 400), (505, 400), (40, 40, 40), 1)
+    
+    # 4. LỊCH SỬ VÀ THỐNG KÊ (ANALYTICS HISTORY) -> Vàng Hổ Phách sang trọng (0, 210, 255)
+    cv2.putText(img, last_result, (35, 440), cv2.FONT_HERSHEY_SIMPLEX, 0.60, (0, 210, 255), 2)
+    cv2.putText(img, f"Total Sessions : {len(session_history)}", (35, 480), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
+    cv2.putText(img, f"Avg Reps : {avg_reps:.1f}", (35, 520), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
+    cv2.putText(img, f"Avg Speed : {avg_speed:.2f} sec/cycle", (35, 560), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
+    cv2.putText(img, f"Best Reps : {best_reps}", (35, 600), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 210, 255), 2)
+    
+    # 5. BIÊN ĐỘ VÀ ĐỘ MỎI CƠ (WAVEFORM METRICS) -> Màu Đỏ Cam Monitor (0, 60, 240)
+    cv2.putText(img, f"Peak Amp (Live) : {display_amp:.1f}%", (35, 650), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
+    cv2.putText(img, f"Amplitude Loss : {amplitude_decrement:.1f}%", (35, 680), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 60, 240), 2)
 
-    # Bảng phím tắt điều khiển góc phải - Đồng bộ màu xám đen gọn gàng
-    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
-    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
-    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
-    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (40, 40, 40), 2)
+    # Bảng phím tắt điều khiển góc phải - Đồng bộ màu xám trắng để chìm xuống, tập trung vào trung tâm
+    cv2.putText(img, "B = Start Assessment", (900, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
+    cv2.putText(img, "P = Pause / Resume", (900, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
+    cv2.putText(img, "R = Reset System", (900, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
+    cv2.putText(img, "ESC = Exit", (900, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 200), 2)
 
     # ==========================================
     # PROGRESS BAR UI (THANH TIẾN TRÌNH)
@@ -290,34 +303,34 @@ while True:
         bar_y = 680
         current_bar_x = int(bar_start_x + (bar_end_x - bar_start_x) * progress_ratio)
         
-        # Giữ thanh tiến trình màu xám đậm để không bị sặc sỡ
-        cv2.rectangle(img, (bar_start_x, bar_y), (bar_end_x, bar_y + 15), (220, 220, 220), -1)
-        cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), (80, 80, 80), -1)
+        # Thanh tiến trình dùng màu xanh ngọc bích cực kỳ công nghệ
+        cv2.rectangle(img, (bar_start_x, bar_y), (bar_end_x, bar_y + 15), (40, 40, 40), -1)
+        cv2.rectangle(img, (bar_start_x, bar_y), (current_bar_x, bar_y + 15), (255, 200, 0), -1)
 
     # ==========================================
     # CLINICAL EVALUATION REPORT (POPUP SCREEN)
     # ==========================================
     if finished:
         overlay = img.copy()
-        cv2.rectangle(overlay, (0, 0), (1280, 720), (30, 30, 30), -1)
-        cv2.addWeighted(overlay, 0.75, img, 0.25, 0, img)
+        cv2.rectangle(overlay, (0, 0), (1280, 720), (15, 15, 15), -1)
+        cv2.addWeighted(overlay, 0.85, img, 0.15, 0, img)
 
         bx1, by1, bx2, by2 = 180, 60, 1100, 660
-        cv2.rectangle(img, (bx1, by1), (bx2, by2), (255, 255, 255), -1)
-        cv2.rectangle(img, (bx1, by1), (bx2, by2), (80, 80, 80), 3)  
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (25, 25, 25), -1) # Popup dạng tối tinh tế
+        cv2.rectangle(img, (bx1, by1), (bx2, by2), (80, 80, 80), 2)  
 
-        # Tiêu đề báo cáo - Màu xám đen tối giản (40, 40, 40)
-        cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (40, 40, 40), 3)
-        cv2.line(img, (bx1 + 40, by1 + 70), (bx2 - 40, by1 + 70), (220, 220, 220), 2)
+        # Tiêu đề báo cáo kết quả tổng
+        cv2.putText(img, "PARKINSON MOTOR ASSESSMENT REPORT", (bx1 + 180, by1 + 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255), 3)
+        cv2.line(img, (bx1 + 40, by1 + 70), (bx2 - 40, by1 + 70), (60, 60, 60), 1)
 
-        # Toàn bộ các thông số chỉ số - Độc bản màu xám đen (40, 40, 40)
-        cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
-        cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
-        cv2.putText(img, f"Mean Peak Amplitude:  {final_amplitude:.1f}% (Calibrated Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
-        cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
-        cv2.line(img, (bx1 + 40, by1 + 225), (bx2 - 40, by1 + 225), (240, 240, 240), 1)
+        # Toàn bộ các thông số chỉ số trong popup dùng màu trắng sữa dịu mắt
+        cv2.putText(img, f"Total Repetitions :  {final_reps} cycles (Norm: >{CONFIG['THRESH_NORM_REPS']})", (bx1 + 50, by1 + 115), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
+        cv2.putText(img, f"Average Velocity  :  {final_speed:.2f} sec/cycle (Norm: <{CONFIG['THRESH_NORM_SPEED']}s)", (bx1 + 50, by1 + 145), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
+        cv2.putText(img, f"Mean Peak Amplitude:  {final_amplitude:.1f}% (Calibrated Scale)", (bx1 + 50, by1 + 175), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
+        cv2.putText(img, f"Amplitude Decay   :  {final_decrement:.1f}% (Norm: <{CONFIG['THRESH_NORM_DECAY']}%誤差)", (bx1 + 50, by1 + 205), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (230, 230, 230), 2)
+        cv2.line(img, (bx1 + 40, by1 + 225), (bx2 - 40, by1 + 225), (60, 60, 60), 1)
 
-        # --- LOGIC PHÂN LOẠI - ĐỒNG BỘ MÀU CHỮ XÁM ĐEN (40, 40, 40) ---
+        # --- LOGIC PHÂN LOẠI KẾT QUẢ POPUP ---
         if final_reps < CONFIG["THRESH_MOD_REPS"] or final_speed > CONFIG["THRESH_MOD_SPEED"] or final_decrement > CONFIG["THRESH_MOD_DECAY"]:
             assessment_str = "SEVERE PROFILE (Severe Bradykinesia & Hypokinesia)"
             advice_lines = [
@@ -348,23 +361,23 @@ while True:
                 "3. Feel free to re-test on a monthly basis to monitor your long-term neuromotor trends."
             ]
 
-        # Khung kết quả tổng quan và văn bản tư vấn - Thống nhất màu xám đen (40, 40, 40)
-        cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
-        cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (40, 40, 40), 2)
+        # Khung kết quả đánh giá tổng quan trong Popup
+        cv2.putText(img, "Diagnostic Evaluation:", (bx1 + 50, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200, 200, 200), 2)
+        cv2.putText(img, assessment_str, (bx1 + 270, by1 + 250), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 210, 255), 2) # Làm nổi bật bằng màu vàng hổ phách
         
-        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (250, 250, 250), -1)
-        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (230, 230, 230), 1)
+        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (35, 35, 35), -1)
+        cv2.rectangle(img, (bx1 + 40, by1 + 280), (bx2 - 40, by1 + 530), (50, 50, 50), 1)
 
-        # In chữ xuống dòng tự động chống tràn hình
+        # In chữ hướng dẫn lời khuyên y khoa
         y_offset = by1 + 315
         for line in advice_lines:
             wrapped_lines = wrap_text(line, max_chars=85)
             for wrapped_line in wrapped_lines:
-                cv2.putText(img, wrapped_line, (bx1 + 60, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (40, 40, 40), 1, cv2.LINE_AA)
+                cv2.putText(img, wrapped_line, (bx1 + 60, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (220, 220, 220), 1, cv2.LINE_AA)
                 y_offset += 35
 
-        cv2.line(img, (bx1 + 40, by1 + 560), (bx2 - 40, by1 + 560), (220, 220, 220), 2)
-        cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 210, by1 + 600), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (120, 120, 120), 2)
+        cv2.line(img, (bx1 + 40, by1 + 560), (bx2 - 40, by1 + 560), (60, 60, 60), 2)
+        cv2.putText(img, "Press 'C' to Close & Save  |  Press 'R' to Reset System Data", (bx1 + 210, by1 + 600), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (150, 150, 150), 2)
 
     # ==========================
     # WINDOW RENDERING
